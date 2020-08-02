@@ -118,7 +118,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Latest infection rate`))
-            paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2))
+            paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")")
         else
             ""
     })
@@ -127,7 +127,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
-            paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2))
+            paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")")
         else
             ""
     })
@@ -136,7 +136,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`)
+            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`, "(England total: ", sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE), ")")
         else
             ""
     })
@@ -168,11 +168,11 @@ server <- function(input, output) {
             ""
     })
     
-    output_asylum = renderText({
+    output$asylum = renderText({
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`People receiving Section 95 support`))
-            paste0("People receiving Section 95 support: ", curr_stats$`People receiving Section 95 support`)
+            paste0("People receiving Section 95 support: ", curr_stats$`People receiving Section 95 support`, " (UK total: ", sum(la_data$`People receiving Section 95 support`, na.rm = TRUE), ")")
         else
             ""
     })

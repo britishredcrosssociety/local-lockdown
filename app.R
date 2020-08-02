@@ -28,13 +28,39 @@ ui <- bootstrapPage(
     
     leafletOutput("map", width = "100%", height = "100%"),
     
-    absolutePanel(top = 0, left = 50, titlePanel("Local Lockdown")),
+    # absolutePanel(top = 0, left = 50, 
+    #               titlePanel("Local Lockdown")),
     
-    absolutePanel(top = 10, right = 10,
+    absolutePanel(id = "controls", class = "panel panel-default",
+                  top = 0, left = 50, width = 250, fixed = TRUE,
+                  draggable = TRUE, height = "auto",
+                  
+                  h2("Local Lockdown"),
+                  
                   selectInput("lad", 
                               label = "Choose a Local Authority",
-                              choices = sort(la_data$Name))
+                              choices = sort(la_data$Name)),
+                  
+                  textOutput("infection_rate_latest"),
+                  br(),
+                  textOutput("infection_rate_mean"),
+                  br(),
+                  textOutput("shielded"),
+                  br(),
+                  textOutput("deprivation"),
+                  br(),
+                  textOutput("bame_uk"),
+                  textOutput("bame_non_uk"),
+                  br(),
+                  textOutput("asylum")
     )
+                  
+    
+    # absolutePanel(top = 10, right = 10,
+    #               selectInput("lad", 
+    #                           label = "Choose a Local Authority",
+    #                           choices = sort(la_data$Name))
+    # )
 )
 
 
@@ -52,6 +78,10 @@ server <- function(input, output) {
     # Show data for and zoom to selected Local Authority
     filteredLA <- reactive({
         lad %>% filter(lad19nm == input$lad)
+    })
+    
+    filteredLAStats = reactive({
+        la_data %>% filter(Name == input$lad)
     })
     
     filteredVI <- reactive({
@@ -81,6 +111,70 @@ server <- function(input, output) {
             
             setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
         
+    })
+    
+    # ---- Reactive text outputs for Local Authority stats ----
+    output$infection_rate_latest = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Latest infection rate`))
+            paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2))
+        else
+            ""
+    })
+    
+    output$infection_rate_mean = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
+            paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2))
+        else
+            ""
+    })
+    
+    output$shielded = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Clinically extremely vulnerable`))
+            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`)
+        else
+            ""
+    })
+    
+    output$deprivation = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`IMD 2019 - Extent`))
+            paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%")
+        else
+            ""
+    })
+    
+    output$bame_uk = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
+            paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%")
+        else
+            ""
+    })
+    
+    output$bame_non_uk = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
+            paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%")
+        else
+            ""
+    })
+    
+    output_asylum = renderText({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`People receiving Section 95 support`))
+            paste0("People receiving Section 95 support: ", curr_stats$`People receiving Section 95 support`)
+        else
+            ""
     })
 }
 

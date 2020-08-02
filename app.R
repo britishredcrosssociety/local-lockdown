@@ -12,6 +12,7 @@ library(magrittr)
 library(dplyr)
 library(sf)
 library(leaflet)
+library(raster)
 
 # ---- Load data ----
 la_data = read_csv("data/local authority stats.csv")
@@ -60,10 +61,15 @@ server <- function(input, output) {
     pal <- colorNumeric("viridis", 1:10)
     
     observe({
-        leafletProxy("map", data = filteredLA()) %>%
+        curr_LA = filteredLA()
+        
+        leafletProxy("map", data = curr_LA) %>%
             clearShapes() %>%
             addPolygons(fill = FALSE) %>% 
-            addPolygons(data = filteredVI(), fillColor = ~pal(Vulnerability.decile), fillOpacity = 0.7)
+            addPolygons(data = filteredVI(), fillColor = ~pal(Vulnerability.decile), fillOpacity = 0.7) %>% 
+            
+            setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
+        
     })
 }
 

@@ -1,0 +1,50 @@
+#
+# This is the user-interface definition of a Shiny web application. You can
+# run the application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+library(shiny)
+library(readr)
+library(magrittr)
+library(dplyr)
+library(sf)
+library(leaflet)
+
+# ---- Load data ----
+la_data = read_csv("data/local authority stats.csv")
+lad = read_sf("data/Local_Authority_Districts__December_2019__Boundaries_UK_BGC.shp")
+vi = read_sf("data/vulnerability.geojson")
+
+
+# ---- UI ----
+ui <- bootstrapPage(
+    tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+    
+    leafletOutput("map", width = "100%", height = "100%"),
+    
+    absolutePanel(top=0, left=50, titlePanel("Local Lockdown")),
+    
+    absolutePanel(top = 10, right = 10,
+                  selectInput("lad", 
+                              label = "Choose a Local Authority",
+                              choices = sort(la_data$Name))
+    )
+)
+
+
+# ---- Server ----
+server <- function(input, output) {
+    # ---- Draw basemap ----
+    # set up the static parts of the map (that don't change as user selects different options)
+    output$map <- renderLeaflet({
+        leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 12, attributionControl = F)) %>% 
+            setView(lat=54.00366, lng=-2.547855, zoom=7) %>%  # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
+            addProviderTiles(providers$CartoDB.Positron)
+    })
+}
+
+# Run app ----
+shinyApp(ui, server)

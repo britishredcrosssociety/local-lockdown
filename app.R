@@ -28,9 +28,6 @@ ui <- bootstrapPage(
     
     leafletOutput("map", width = "100%", height = "100%"),
     
-    # absolutePanel(top = 0, left = 50, 
-    #               titlePanel("Local Lockdown")),
-    
     absolutePanel(id = "controls", class = "panel panel-default",
                   top = 0, left = 50, width = 250, fixed = TRUE,
                   draggable = TRUE, height = "auto",
@@ -54,13 +51,6 @@ ui <- bootstrapPage(
                   br(),
                   textOutput("asylum")
     )
-                  
-    
-    # absolutePanel(top = 10, right = 10,
-    #               selectInput("lad", 
-    #                           label = "Choose a Local Authority",
-    #                           choices = sort(la_data$Name))
-    # )
 )
 
 
@@ -78,10 +68,6 @@ server <- function(input, output) {
     # Show data for and zoom to selected Local Authority
     filteredLA <- reactive({
         lad %>% filter(lad19nm == input$lad)
-    })
-    
-    filteredLAStats = reactive({
-        la_data %>% filter(Name == input$lad)
     })
     
     filteredVI <- reactive({
@@ -113,6 +99,14 @@ server <- function(input, output) {
         
     })
     
+    # Use a separate observer to recreate the legend as needed.
+    observe({
+        leafletProxy("map", data = vi) %>% 
+            clearControls() %>% 
+            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = "Vulnerability decile\n(10 = highest vulnerability)")
+            
+    })
+    
     # ---- Reactive text outputs for Local Authority stats ----
     output$infection_rate_latest = renderText({
         curr_stats = la_data %>% filter(Name == input$lad)
@@ -136,7 +130,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`, "(England total: ", sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE), ")")
+            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`, " (England total: ", sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE), ")")
         else
             ""
     })

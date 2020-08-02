@@ -14,8 +14,13 @@ lads = read_csv("https://opendata.arcgis.com/datasets/35de30c6778b463a8305939216
 # ---- Vulnerability Index ----
 vi = read_sf("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/output/vulnerability-MSOA-UK.geojson")
 
+# lookup local authorities that each MSOA is in
+msoa_lad = read_csv("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/lookup%20msoa%20to%20lad.csv")
+
 # save a local copy
-write_sf(vi, "data/vulnerability.geojson")
+vi %>% 
+  left_join(msoa_lad, by = c("Code" = "MSOA11CD")) %>% 
+  write_sf("data/vulnerability.geojson")
 
 
 # ---- Weekly infection rates ----

@@ -49,7 +49,9 @@ ui <- bootstrapPage(
                   textOutput("bame_uk"),
                   textOutput("bame_non_uk"),
                   br(),
-                  textOutput("asylum")
+                  textOutput("asylum"),
+                  br(),
+                  p("Developed by"), img(src = "brc-logo.jpg", width = 225)
     )
 )
 

@@ -55,7 +55,10 @@ server <- function(input, output) {
     })
     
     filteredVI <- reactive({
-        vi %>% filter(LAD19CD == input$lad)
+        # get code from selected LAD name
+        lad_code = lad %>% filter(lad19nm == input$lad)
+        
+        vi %>% filter(LAD19CD == lad_code$lad19cd)
     })
     
     pal <- colorNumeric("viridis", 1:10)
@@ -65,8 +68,16 @@ server <- function(input, output) {
         
         leafletProxy("map", data = curr_LA) %>%
             clearShapes() %>%
-            addPolygons(fill = FALSE) %>% 
-            addPolygons(data = filteredVI(), fillColor = ~pal(Vulnerability.decile), fillOpacity = 0.7) %>% 
+
+            addPolygons(data = filteredVI(), 
+                        fillColor = ~pal(Vulnerability.decile), fillOpacity = 0.8, color = "white", weight = 0.5, 
+                        popup = ~paste("<b>", Name, "</b><br/><br/>",
+                                       "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
+                                       "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
+                                       "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
+                                       "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>")) %>% 
+            
+            addPolygons(fill = FALSE) %>%  # Local Authority boundaries
             
             setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
         

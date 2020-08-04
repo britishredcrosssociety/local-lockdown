@@ -38,6 +38,10 @@ ui <- bootstrapPage(
                               label = "Choose a Local Authority",
                               choices = sort(la_data$Name)),
                   
+                  selectInput("vi",
+                              label = "Type of vulnerability",
+                              choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
+                  
                   textOutput("infection_rate_latest"),
                   br(),
                   textOutput("infection_rate_mean"),
@@ -76,7 +80,13 @@ server <- function(input, output) {
         # get code from selected LAD name
         lad_code = lad %>% filter(lad19nm == input$lad)
         
-        vi %>% filter(LAD19CD == lad_code$lad19cd)
+        vi %>% 
+            filter(LAD19CD == lad_code$lad19cd) %>% 
+            mutate(Decile = case_when(
+                input$vi == "Socioeconomic vulnerability" ~ Socioeconomic.Vulnerability.decile, 
+                input$vi == "Clinical vulnerability" ~ Clinical.Vulnerability.decile, 
+                input$vi == "Overall vulnerability" ~ Vulnerability.decile
+            ))
     })
     
     pal <- colorNumeric("viridis", 1:10)
@@ -88,7 +98,7 @@ server <- function(input, output) {
             clearShapes() %>%
 
             addPolygons(data = filteredVI(), 
-                        fillColor = ~pal(Vulnerability.decile), fillOpacity = 0.8, color = "white", weight = 0.5, 
+                        fillColor = ~pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.5, 
                         popup = ~paste("<b>", Name, "</b><br/><br/>",
                                        "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
                                        "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
@@ -105,7 +115,7 @@ server <- function(input, output) {
     observe({
         leafletProxy("map", data = vi) %>% 
             clearControls() %>% 
-            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = "Vulnerability decile\n(10 = highest vulnerability)")
+            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = paste0(input$vi, " (10 = most vulnerable)"))
             
     })
     

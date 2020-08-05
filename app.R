@@ -26,10 +26,12 @@ lad = lad %>% st_transform(crs = 4326)
 ui <- bootstrapPage(
     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
     
+    tags$head(includeCSS("styles.css")),
+    
     leafletOutput("map", width = "100%", height = "100%"),
     
     absolutePanel(id = "controls", class = "panel panel-default",
-                  top = 0, left = 50, width = 250, fixed = TRUE,
+                  top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
                   draggable = TRUE, height = "auto",
                   
                   h2("Local Lockdown"),
@@ -125,7 +127,7 @@ server <- function(input, output) {
     observe({
         leafletProxy("map", data = vi) %>% 
             clearControls() %>% 
-            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = paste0(input$vi, " (10 = most vulnerable)"))
+            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = paste0(input$vi, tags$br(), " (10 = most vulnerable)"))
             
     })
     

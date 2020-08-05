@@ -1,0 +1,14 @@
+/* Customize fonts */
+@import url(https://cdn.jsdelivr.net/gh/tonsky/FiraCode@4/distr/fira_code.css);
+
+body, label, input, button, select { 
+  font-family: 'Fira Code', monospace;
+  font-weight: 200;
+}
+h1, h2, h3, h4 { font-weight: 400; }
+
+#controls {
+  /* Appearance */
+  background-color: white;
+  padding: 5px 20px 10px 20px;
+}

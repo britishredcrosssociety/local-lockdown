@@ -67,7 +67,17 @@ server <- function(input, output) {
     output$map <- renderLeaflet({
         leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 12, attributionControl = F)) %>% 
             setView(lat=54.00366, lng=-2.547855, zoom=7) %>%  # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
-            addProviderTiles(providers$CartoDB.Positron)
+            addProviderTiles(providers$CartoDB.Positron) %>% 
+            # Add button to reset zoom
+            addEasyButton(easyButton(
+                icon="fa-globe", title="Reset zoom level",
+                onClick=JS("function(btn, map){ map.setZoom(6); }"))) %>% 
+            # Add measuring tool to allow computation of distances as the crow flies
+            addMeasure(position = "bottomleft",
+                       primaryLengthUnit = "miles",
+                       secondaryLengthUnit = "kilometers",
+                       activeColor = "#21908D",
+                       completedColor = "#3B1C8C")
     })
     
     # ---- Change map when user selects a Local Authority ----

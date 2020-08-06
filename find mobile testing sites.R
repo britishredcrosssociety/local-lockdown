@@ -16,7 +16,6 @@ vi = vi %>%
 
 
 # ---- Load and geocode hospitals ----
-hospitals_eng = read_delim("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/hospital-data/Hospital.csv", delim = "¬")
 hospitals_eng = read_csv("data/hospitals-england.csv")
 # hospitals_wal = read_excel("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/hospital-data/Wales%20hospital%20list.xls")
 
@@ -36,8 +35,14 @@ postcodes_raw = read_csv("data/postcodes/Data/ONSPD_FEB_2020_UK.csv")
 postcodes = postcodes_raw %>% dplyr::select(Postcode = pcd, msoa11, oslaua)
 
 # the ONS data truncates 7-character postcodes to remove spaces (e.g. CM99 1AB --> CM991AB); get rid of all spaces in both datasets to allow merging
-postcodes$Postcode2 = gsub(" ", "", postcodes$Postcode)
-hospitals_eng$Postcode2 = gsub(" ", "", hospitals_eng$Postcode)
+# Mutate to upper case
+postcodes <- postcodes %>% 
+  mutate(Postcode2 = str_to_upper(Postcode),
+         Postcode2 = str_replace_all(Postcode, " ", ""))
+
+hospitals_eng <- hospitals_eng %>% 
+  mutate(Postcode2 = str_to_upper(Postcode),
+         Postcode2 = str_replace_all(Postcode, " ", ""))
 
 # keep only hospitals in high vulnerability area
 hospitals_eng_vi = hospitals_eng %>% 
@@ -60,25 +65,48 @@ hospitals_eng_vi %>%
 
 
 # ---- Find hospitals whose neighbouring MSOAs are highly vulnerable ----
-# potential method:
-# make spatial dataframe containing only MSOA polygons where the hospitals are
-# use st_touches / st_intersects to find the neighbours
+# Load geodata
+hospitals_sp <- read_sf("data/hospitals.shp")
+vi_sp <- read_sf("data/vulnerability-MSOA-UK.geojson")
 
-hospitals_sp = hospitals_eng %>% 
-  filter(!is.na(Longitude) & !is.na(Latitude)) %>% 
-  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+# Track hospitals with id
+hospitals_sp <- hospitals_sp %>% 
+  mutate(id = row_number()) %>% 
+  relocate(id)
 
-plot(st_make_grid(vi, cellsize = .1))
+# Create list of MSOA's that contain a hospital
+hosp_list <- hospitals_sp %>% 
+  as_tibble() %>% 
+  select(id, MSOA11C)
 
-hospitals_sp[1,]
+# Join list of hospitals onto complete VI and filter only vulnerable geometries
+hospitals_vi <- vi_sp %>% 
+  select(Code, Socioeconomic.Vulnerability.decile , geometry) %>% 
+  left_join(hosp_list, by = c("Code" = "MSOA11C")) %>% 
+  filter(Socioeconomic.Vulnerability.decile >= 9)
 
-st_relate(vi, hospitals_sp[1,], "F***T****")
+# Identify the row id's of any geometries from the VI that border another vulnerable VI geometry
+row_ids <- hospitals_vi %>% 
+  st_touches() %>% 
+  as_tibble() %>% 
+  pull(row.id) %>% 
+  unique()
+  
+# Assign tag to original data to indicate geometries bordering another vulnerable geometry
+hospitals_vi <- hospitals_vi %>% 
+  mutate(row_id = row_number(),
+         vul_neighbour = if_else(row_id %in% row_ids,
+                                 TRUE,
+                                 FALSE)) %>%
+  select(-row_id)
 
-st_relate(hospitals_sp[1,], vi)
+# Filter to MSOA's that contain a hospital
+hospitals_neighbours <- hospitals_vi %>% 
+  filter(!is.na(id)) %>% 
+  as_tibble() %>% 
+  select(id, vul_neighbour)
 
-
-
-
-
-
-
+# Join hospital vulnerability column to original hospital shape file
+hospitals_sp <- hospitals_sp %>% 
+  left_join(hospitals_neighbours, by = "id")
+  

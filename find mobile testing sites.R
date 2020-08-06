@@ -17,6 +17,7 @@ vi = vi %>%
 
 # ---- Load and geocode hospitals ----
 hospitals_eng = read_delim("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/hospital-data/Hospital.csv", delim = "¬")
+hospitals_eng = read_csv("data/hospitals-england.csv")
 # hospitals_wal = read_excel("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/hospital-data/Wales%20hospital%20list.xls")
 
 # Filter out 'Mental Health Hospital'

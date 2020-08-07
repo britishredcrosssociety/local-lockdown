@@ -19,7 +19,7 @@ la_data = read_csv("data/local authority stats.csv")
 lad = read_sf("data/Local_Authority_Districts__December_2019__Boundaries_UK_BGC.shp")
 vi = read_sf("data/vulnerability.geojson")
 
-lad = lad %>% st_transform(crs = 4326)
+lad = lad %>% st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
 
 
 # ---- UI ----

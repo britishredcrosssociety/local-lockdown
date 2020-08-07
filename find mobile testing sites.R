@@ -78,34 +78,60 @@ hosp_list <- hospitals_sp %>%
   as_tibble() %>% 
   select(id, MSOA11C)
 
-# Join list of hospitals onto complete VI and filter only vulnerable geometries
+# Join list of hospitals onto VI. where id == NA, means no hospital in MSOA.
 hospitals_vi <- vi_sp %>% 
   select(Code, Socioeconomic.Vulnerability.decile , geometry) %>% 
-  left_join(hosp_list, by = c("Code" = "MSOA11C")) %>% 
-  filter(Socioeconomic.Vulnerability.decile >= 9)
+  left_join(hosp_list, by = c("Code" = "MSOA11C"))
 
-# Identify the row id's of any geometries from the VI that border another vulnerable VI geometry
-row_ids <- hospitals_vi %>% 
-  st_touches() %>% 
-  as_tibble() %>% 
-  pull(row.id) %>% 
-  unique()
+# ---- For each ID, find any neighbouring MSOA's that score >= 9 in vulnerability ----
+
+# Create empty tibble of ID (hospital) Codes and booleans to indicate if that ID has a vulnerable
+# Neighbour
+vul_neighbours <- tibble(id = integer(),
+                         vul_neighbour = logical())
+
+# 1.
+# Iterate over all hospital IDs and MSOA's that are vulnerable, and create an index of row
+# numbers which indicate if any of these boundaries are touching. By default, all hospitals
+# touching a vulnerable MSOA will get indexed (in addition to any MSOA's touching another 
+# vulnerable MSOA)
+
+# 2.
+# Assign a boolean flag to the filtered dataset to identify ID's (i.e., hospitals) which were
+# indexed as bordering a vulnerable MSOA. Filter the data set for the current ID to see
+# if it borders a vulnerable MSOA
+
+# 3.
+# Add ID to results table 
+
+for(id in hosp_list$id) {
   
-# Assign tag to original data to indicate geometries bordering another vulnerable geometry
-hospitals_vi <- hospitals_vi %>% 
-  mutate(row_id = row_number(),
-         vul_neighbour = if_else(row_id %in% row_ids,
-                                 TRUE,
-                                 FALSE)) %>%
-  select(-row_id)
+  # 1.
+  row_nums <- hospitals_vi %>% 
+    filter(id == id | Socioeconomic.Vulnerability.decile >= 9) %>% 
+    st_touches() %>% 
+    as_tibble()  %>% 
+    pull(row.id) %>% 
+    unique()
+  
+  # 2.
+  is_id_vulnerable <- hospitals_vi %>% 
+    filter(id == id | Socioeconomic.Vulnerability.decile >= 9) %>% 
+    mutate(row_num = row_number(),
+           vul_neighbour = if_else(row_num %in% row_nums,
+                                   TRUE,
+                                   FALSE)) %>% 
+    as_tibble() %>% 
+    filter(id == 1) %>% 
+    select(id, vul_neighbour)
+  
+  # 3.
+  vul_neighbours <- bind_rows(vul_neighbours,
+                              is_id_vulnerable)
+  
+}
 
-# Filter to MSOA's that contain a hospital
-hospitals_neighbours <- hospitals_vi %>% 
-  filter(!is.na(id)) %>% 
-  as_tibble() %>% 
-  select(id, vul_neighbour)
-
-# Join hospital vulnerability column to original hospital shape file
+# Join vul_neighbours column to original hospital shape file to indicate which hospitals
+# border a vulnerable MSOAs
 hospitals_sp <- hospitals_sp %>% 
-  left_join(hospitals_neighbours, by = "id")
-  
+  left_join(vul_neighbours, by = "id")

@@ -15,6 +15,8 @@ library(leaflet)
 library(raster)
 
 # ---- Load data ----
+source("functions.R")
+
 la_data = read_csv("data/local authority stats.csv")
 lad = read_sf("data/Local_Authority_Districts__December_2019__Boundaries_UK_BGC.shp")
 vi = read_sf("data/vulnerability.geojson")
@@ -101,7 +103,7 @@ server <- function(input, output) {
             ))
     })
     
-    pal <- colorNumeric("viridis", 1:10)
+    pal <- colorFactor("viridis", c(1:10), reverse = TRUE)
     
     observe({
         curr_LA = filteredLA()
@@ -127,7 +129,12 @@ server <- function(input, output) {
     observe({
         leafletProxy("map", data = vi) %>% 
             clearControls() %>% 
-            addLegend(position = "bottomright", pal = pal, values = ~Vulnerability.decile, title = paste0(input$vi, tags$br(), " (10 = most vulnerable)"))
+            addLegend_decreasing(position = "bottomright",
+                                 pal = pal,
+                                 values = ~Vulnerability.decile,
+                                 title = paste0(input$vi, tags$br(), " (10 = most vulnerable)"),
+                                 opacity = 0.8,
+                                 decreasing = TRUE)
             
     })
     

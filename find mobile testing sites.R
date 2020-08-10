@@ -44,12 +44,10 @@ hospitals_eng <- hospitals_eng %>%
   mutate(Postcode2 = str_to_upper(Postcode),
          Postcode2 = str_replace_all(Postcode, " ", ""))
 
-# keep only hospitals in high vulnerability area
+# Look up MSOAs and VI deciles for each hospital
 hospitals_eng_vi = hospitals_eng %>%
   left_join(postcodes, by = "Postcode2") %>%
-  left_join(vi, by = c("msoa11" = "Code")) #%>%
-
-#  filter(Socioeconomic.Vulnerability.decile >= 9)
+  left_join(vi, by = c("msoa11" = "Code"))
 
 # convert to spatial dataframe and save
 hospitals_eng_vi %>%
@@ -137,7 +135,12 @@ for(hosp_id in hosp_list$id) {
 hospitals_sp <- hospitals_sp %>% 
   left_join(vul_neighbours, by = "id")
 
+# Mark which hospitals are in high vulnerability areas
+hospitals_sp <- hospitals_sp %>% 
+  left_join(vi %>% st_set_geometry(NULL),  # need to remove geometry before joining
+            by = c("MSOA11C" = "Code")) %>% 
+  mutate(vul_area = ifelse(Socioeconomic.Vulnerability.decile >= 9, TRUE, FALSE))
+
 # Save
 hospitals_sp %>% 
-  filter() %>% 
-  write_sf("data/hospital-test-sites.shp")
+  write_sf("data/hospital-vulnerability.shp")

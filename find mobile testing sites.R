@@ -144,3 +144,7 @@ hospitals_sp <- hospitals_sp %>%
 # Save
 hospitals_sp %>% 
   write_sf("data/hospital-vulnerability.shp")
+
+hospitals_sp %>% 
+  st_set_geometry(NULL) %>% 
+  write_csv("data/hospital-vulnerability.csv")

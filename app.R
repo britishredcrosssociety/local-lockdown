@@ -18,6 +18,16 @@ library(raster)
 la_data = read_csv("data/local authority stats.csv")
 lad = read_sf("data/Local_Authority_Districts__December_2019__Boundaries_UK_BGC.shp")
 vi = read_sf("data/vulnerability.geojson")
+markers = read_sf("data/hospital-markers.shp") %>%
+    replace_na(list(OrgnstN = "",
+                    Addrss1 = "",
+                    Postcod = "",
+                    Website = "")) %>% 
+    mutate(popup = paste(sep = "<br/>",
+                         OrgnstN,
+                         Addrss1,
+                         Postcod,
+                         Website))
 
 lad = lad %>% st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
 
@@ -79,7 +89,12 @@ server <- function(input, output) {
                        primaryLengthUnit = "miles",
                        secondaryLengthUnit = "kilometers",
                        activeColor = "#21908D",
-                       completedColor = "#3B1C8C")
+                       completedColor = "#3B1C8C") %>% 
+            # Add hospital markers
+            addMarkers(data = markers,
+                       options = markerOptions(riseOnHover = TRUE,
+                                               opacity = .8),
+                       popup = markers$popup)
     })
     
     # ---- Change map when user selects a Local Authority ----

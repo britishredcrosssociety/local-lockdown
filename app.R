@@ -26,11 +26,10 @@ markers = read_sf("data/hospital-markers.shp") %>%
                     Addrss1 = "",
                     Postcod = "",
                     Website = "")) %>% 
-    mutate(popup = paste(sep = "<br/>",
-                         OrgnstN,
-                         Addrss1,
-                         Postcod,
-                         Website))
+    mutate(popup = paste0(OrgnstN, "<br/>",
+                          Addrss1, "<br/>",
+                          Postcod, "<br/>",
+                          "<a href='", Website, "'>", Website, "</a>"))
 
 lad = lad %>%
     filter(str_sub(lad19cd, 1, 1) == "E") %>%  # only use England's LAs for now, because that's where we have hospital data for

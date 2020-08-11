@@ -12,6 +12,7 @@ library(magrittr)
 library(dplyr)
 library(sf)
 library(leaflet)
+library(scales)
 # library(raster)
 
 # ---- Load data ----
@@ -182,7 +183,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`, " (England total: ", sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE), ")")
+            paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")")
         else
             ""
     })
@@ -218,7 +219,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`People receiving Section 95 support`))
-            paste0("People receiving Section 95 support: ", curr_stats$`People receiving Section 95 support`, " (UK total: ", sum(la_data$`People receiving Section 95 support`, na.rm = TRUE), ")")
+            paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")")
         else
             ""
     })

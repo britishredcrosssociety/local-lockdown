@@ -12,7 +12,7 @@ library(magrittr)
 library(dplyr)
 library(sf)
 library(leaflet)
-library(raster)
+# library(raster)
 
 # ---- Load data ----
 source("functions.R")
@@ -31,7 +31,12 @@ markers = read_sf("data/hospital-markers.shp") %>%
                          Postcod,
                          Website))
 
-lad = lad %>% st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
+lad = lad %>%
+    filter(str_sub(lad19cd, 1, 1) == "E") %>%  # only use England's LAs for now, because that's where we have hospital data for
+    st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
+
+la_data = la_data %>% filter(str_sub(LAD19CD, 1, 1) == "E")
+vi = vi %>% filter(str_sub(LAD19CD, 1, 1) == "E")
 
 
 # ---- UI ----

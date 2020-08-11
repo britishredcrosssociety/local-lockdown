@@ -133,14 +133,14 @@ server <- function(input, output) {
             clearShapes() %>%
 
             addPolygons(data = filteredVI(), 
-                        fillColor = ~pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.5, 
+                        fillColor = ~pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7, 
                         popup = ~paste("<b>", Name, "</b><br/><br/>",
                                        "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
                                        "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
                                        "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
                                        "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>")) %>% 
             
-            addPolygons(fill = FALSE) %>%  # Local Authority boundaries
+            # addPolygons(fill = FALSE, color = "grey20", weight = 1) %>%  # Local Authority boundaries (don't really need them actually)
             
             setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
         

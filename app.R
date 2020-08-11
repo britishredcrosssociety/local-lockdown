@@ -49,10 +49,11 @@ ui <- bootstrapPage(
     leafletOutput("map", width = "100%", height = "100%"),
     
     absolutePanel(id = "controls", class = "panel panel-default",
-                  top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
+                  top = 10, left = 50, bottom = "auto", width = 330, fixed = TRUE,
                   draggable = TRUE, height = "auto",
                   
                   h2("Local Lockdown"),
+                  p("This tool helps you find hospitals to use for Covid-19 testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", "British Red Cross's Vulnerability Index"), ". Markers show hospitals in or near highly vulnerable areas."),
                   
                   selectInput("lad", 
                               label = "Choose a Local Authority",
@@ -61,6 +62,13 @@ ui <- bootstrapPage(
                   selectInput("vi",
                               label = "Type of vulnerability",
                               choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
+                  
+                  p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+    ),
+    
+    absolutePanel(id = "controls", class = "panel panel-default",
+                  top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
+                  draggable = TRUE, height = "auto",
                   
                   textOutput("infection_rate_latest"),
                   br(),
@@ -73,9 +81,7 @@ ui <- bootstrapPage(
                   textOutput("bame_uk"),
                   textOutput("bame_non_uk"),
                   br(),
-                  textOutput("asylum"),
-                  br(),
-                  p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+                  textOutput("asylum")
     )
 )
 

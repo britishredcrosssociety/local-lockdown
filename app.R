@@ -72,18 +72,20 @@ ui <- bootstrapPage(
                   top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
                   draggable = TRUE, height = "auto",
                   
-                  textOutput("infection_rate_latest"),
-                  br(),
-                  textOutput("infection_rate_mean"),
-                  br(),
-                  textOutput("shielded"),
-                  br(),
-                  textOutput("deprivation"),
-                  br(),
-                  textOutput("bame_uk"),
-                  textOutput("bame_non_uk"),
-                  br(),
-                  textOutput("asylum")
+                  htmlOutput("la_stats")
+                  
+                  # textOutput("infection_rate_latest"),
+                  # br(),
+                  # textOutput("infection_rate_mean"),
+                  # br(),
+                  # textOutput("shielded"),
+                  # br(),
+                  # textOutput("deprivation"),
+                  # br(),
+                  # textOutput("bame_uk"),
+                  # textOutput("bame_non_uk"),
+                  # br(),
+                  # textOutput("asylum")
     )
 )
 
@@ -168,6 +170,36 @@ server <- function(input, output) {
     })
     
     # ---- Reactive text outputs for Local Authority stats ----
+    # LA statistics to display in top-right panel
+    output$la_stats = renderUI({  # render as HTML
+        str_stats = c()  # the string to build in this function
+        
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        if (!is.na(curr_stats$`Latest infection rate`))
+            str_stats = c(str_stats, paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")"))
+
+        if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
+            str_stats = c(str_stats, paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")"))
+        
+        if (!is.na(curr_stats$`Clinically extremely vulnerable`))
+            pstr_stats = c(str_stats, paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")"))
+        
+        if (!is.na(curr_stats$`IMD 2019 - Extent`))
+            str_stats = c(str_stats, paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%"))
+        
+        if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
+            str_stats = c(str_stats, paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%"))
+        
+        if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
+            str_stats = c(str_stats, paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%"))
+        
+        if (!is.na(curr_stats$`People receiving Section 95 support`))
+            str_stats = c(str_stats, paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")"))
+        
+        HTML(paste(str_stats, collapse = "<br/><br/>"))
+    })
+    
     output$infection_rate_latest = renderText({
         curr_stats = la_data %>% filter(Name == input$lad)
         

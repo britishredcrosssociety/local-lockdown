@@ -12,7 +12,8 @@ library(magrittr)
 library(dplyr)
 library(sf)
 library(leaflet)
-library(raster)
+library(scales)
+# library(raster)
 
 # ---- Load data ----
 source("functions.R")
@@ -25,13 +26,17 @@ markers = read_sf("data/hospital-markers.shp") %>%
                     Addrss1 = "",
                     Postcod = "",
                     Website = "")) %>% 
-    mutate(popup = paste(sep = "<br/>",
-                         OrgnstN,
-                         Addrss1,
-                         Postcod,
-                         Website))
+    mutate(popup = paste0(OrgnstN, "<br/>",
+                          Addrss1, "<br/>",
+                          Postcod, "<br/>",
+                          "<a href='", Website, "'>", Website, "</a>"))
 
-lad = lad %>% st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
+lad = lad %>%
+    filter(str_sub(lad19cd, 1, 1) == "E") %>%  # only use England's LAs for now, because that's where we have hospital data for
+    st_transform(crs = 4326)  # could do this in preprocessing to speed up load times
+
+la_data = la_data %>% filter(str_sub(LAD19CD, 1, 1) == "E")
+vi = vi %>% filter(str_sub(LAD19CD, 1, 1) == "E")
 
 
 # ---- UI ----
@@ -39,6 +44,7 @@ ui <- bootstrapPage(
     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
     
     tags$head(includeCSS("styles.css")),
+    tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
     
     leafletOutput("map", width = "100%", height = "100%"),
     
@@ -79,7 +85,7 @@ server <- function(input, output) {
     # ---- Draw basemap ----
     # set up the static parts of the map (that don't change as user selects different options)
     output$map <- renderLeaflet({
-        leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 12, attributionControl = F)) %>% 
+        leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>% 
             setView(lat=54.00366, lng=-2.547855, zoom=7) %>%  # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
             addProviderTiles(providers$CartoDB.Positron) %>% 
             # Add button to reset zoom
@@ -127,14 +133,14 @@ server <- function(input, output) {
             clearShapes() %>%
 
             addPolygons(data = filteredVI(), 
-                        fillColor = ~pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.5, 
+                        fillColor = ~pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7, 
                         popup = ~paste("<b>", Name, "</b><br/><br/>",
                                        "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
                                        "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
                                        "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
                                        "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>")) %>% 
             
-            addPolygons(fill = FALSE) %>%  # Local Authority boundaries
+            # addPolygons(fill = FALSE, color = "grey20", weight = 1) %>%  # Local Authority boundaries (don't really need them actually)
             
             setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
         
@@ -176,7 +182,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            paste0("No. clinically extremely vulnerable: ", curr_stats$`Clinically extremely vulnerable`, " (England total: ", sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE), ")")
+            paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")")
         else
             ""
     })
@@ -212,7 +218,7 @@ server <- function(input, output) {
         curr_stats = la_data %>% filter(Name == input$lad)
         
         if (!is.na(curr_stats$`People receiving Section 95 support`))
-            paste0("People receiving Section 95 support: ", curr_stats$`People receiving Section 95 support`, " (UK total: ", sum(la_data$`People receiving Section 95 support`, na.rm = TRUE), ")")
+            paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")")
         else
             ""
     })

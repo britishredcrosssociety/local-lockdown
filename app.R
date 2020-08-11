@@ -7,6 +7,8 @@
 #    http://shiny.rstudio.com/
 #
 library(shiny)
+library(tidyr)
+library(stringr)
 library(readr)
 library(magrittr)
 library(dplyr)

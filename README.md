@@ -11,3 +11,30 @@ R Shiny dashboard for visualising information related to Covid-19 Test &amp; Tra
 To contribute to this project, please follow [GitHub Flow](https://guides.github.com/introduction/flow/) when submitting changes.
 
 > Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+
+## Deployment
+
+[Website](https://vcsep-local-lockdown-dev-app.azurewebsites.net)
+
+> **tl;dr** - anything pushed to the `master` branch gets deployed 
+
+A Dockerfile is provided for easy deployment, which is managed centrally. There are [GitHub Actions](https://github.com/features/actions)
+to build a Docker image and publish it to the BRC/VCSEP registry. The action of building and publishing a new image
+triggers the server to download that image and run it on the server.
+
+### Build the Docker container
+
+> See [Docker website](https://docs.docker.com/engine/install/) for installation instructions
+
+```shell script
+docker build -t local-lockdown .
+``` 
+
+Due to the size of R dependencies, this will take ~15 minutes to build and take up around 2.2GB in space.
+
+### todos
+
+- [ ] Add tests to ensure that the Docker image runs correctly
+- [ ] Automate dependency installation using `requirements.txt` format (or similar)
+- [ ] Establish better fix for error installing [tidyr@1.1.1](https://stackoverflow.com/questions/63348135/error-installing-tidyr-on-ubuntu-18-04-r-4-0-2)
+- [ ] Run Actions on all branches, only publishing on `master`

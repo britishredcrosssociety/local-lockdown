@@ -26,7 +26,7 @@ vi %>%
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
 # This URL corresponds to 31 July 2020 (week 31):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/905854/Weekly_COVID19_report_data_w31.xlsx",
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/909421/Weekly_COVID19_report_data_w33.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 11. All weeks rates UTLA", skip = 7)

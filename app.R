@@ -18,7 +18,12 @@ library(scales)
 # library(raster)
 library(shinydashboard)
 library(shinyWidgets)
+
+# what to use for the plots?
 library(ggplot2)
+library('ggiraph')
+#or R wrapper for javascript echarts package -  
+library('echarts4r')
 
 # ---- Load data ----
 source("functions.R")
@@ -128,9 +133,9 @@ body_colwise <- dashboardBody(
                       )),
                
                column(width = 4,
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "Population"#,
-                          #plotOutput('pop_breakdown')
+                      box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
+                          title = "Population Breakdown", align = 'center',
+                          echarts4rOutput('pop_breakdown', height='200px')
                       ),
                       box(width = NULL, solidHeader = TRUE, status = "primary",
                           title = "People recieving Section 95 support:"
@@ -335,44 +340,60 @@ server <- function(input, output) {
     #         ""
     # })
     
-    #BAME population 
-    # output$pop_breakdown = renderPlot({
-    #     #filter by LA 
-    #     curr_stats = la_data %>% filter(Name == input$lad)
-    #     
-    #     #select bame columns
-    #     bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
-    #     
-    #     #if all elements not NA
-    #     if (all(!is.na(bame_stats))) {
-    #         # transpose dataframe
-    #         tbame_stats = bame_stats %>% pivot_longer(c("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born"), names_to = "population", values_to = "proportion")
-    #         print(tbame_stats)
-    #         # plot data
-    #         ggplot(tbame_stats, aes(x = factor(1), y = proportion, fill = population)) + geom_bar(stat = "identity") + coord_polar(theta = "y")
-    #     }
-    #     
-    #     else {
-    #         #data doesn't exist
-    #         if (all(is.na(bame_stats))) {
-    #             #plot something
-    #             ggplot(bame_stats, aes(x = factor(1), y = 100, fill = 'red')) + geom_bar(stat = "identity") + coord_polar(theta = "y")
-    #         }
-    #         
-    #         else {
-    #             #sum all values in row to see if they == 100
-    #             tbame_stats = bame_stats %>% pivot_longer(c("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born"), names_to = "population", values_to = "proportion", na.rm=TRUE)
-    #             print(tbame_stats)
-    #             ggplot(tbame_stats, aes(x = factor(1), y = proportion, fill = population)) + geom_bar(stat = "identity") + coord_polar(theta = "y")
-    #         }
-    #         
-    #     }
-    #     
-    #     
-    #     
-    #     #else if sum to 100 
-    #     
-    # })
+    #Display proportion of BAME population as a pie chart us echarts4r (https://echarts4r.john-coene.com/index.html)
+    output$pop_breakdown = renderEcharts4r({
+        #select user input LA
+        curr_stats = la_data %>% filter(Name == input$lad)
+        
+        #select bame columns
+        bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
+        bame_stats = bame_stats %>% rename("White UK Born" = "Percentage of population who are white UK born") %>% rename('White not UK born'="Percentage of population who are white not UK born") %>% rename('BAME UK born'="Percentage of population who are ethnic minority UK born") %>% rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
+        
+            #if all elements not NA - assuming sums to 100
+            if (all(!is.na(bame_stats))) {
+                # transpose dataframe
+                tbame_stats = bame_stats %>% pivot_longer(c("White UK Born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                #print(tbame_stats)
+                
+                pie <- tbame_stats %>% e_charts(x = population) %>%
+                    e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                    e_tooltip()
+                
+            }
+
+            else {
+                #data doesn't exist
+                if (all(is.na(bame_stats))) {
+                    # at the moment it just leaves it blank
+                    #pie <- bame_stats %>% e_title('No Data Available')
+                    return(NULL)
+                    
+                }
+
+                else {
+                    #transpose
+                    tbame_stats = bame_stats %>% pivot_longer(c("White UK Born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na=TRUE)
+                    #sum all values in row to see if they == 100 - if yes
+                    if(sum(tbame_stats$proportion) == 100) {
+                        #echart4R pie chart
+                        pie <- tbame_stats %>% e_charts(x = population) %>%
+                            e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                            e_tooltip()
+                    }
+                    
+                    else { # if not give user warning to check figures. 
+                        pie <- tbame_stats %>% e_charts(x = population) %>%
+                            e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                            e_tooltip() %>% e_title("","check data (n!=100)", right=20)
+                        
+                    }
+                    
+                   
+                }
+
+            }
+        
+    })
 }
 
 # Run app ----

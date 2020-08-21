@@ -14,7 +14,7 @@ To contribute to this project, please follow [GitHub Flow](https://guides.github
 
 ## Deployment
 
-[Website](https://vcsep-local-lockdown-dev-app.azurewebsites.net)
+[Website](https://vcsep-local-lockdown-app.azurewebsites.net)
 
 > **tl;dr** - anything pushed to the `master` branch gets deployed 
 

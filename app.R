@@ -9,8 +9,6 @@ library(dplyr)
 library(sf)
 library(leaflet)
 library(scales)
-library(leaflet.extras)
-# library(raster)
 
 # ---- Load data ----
 source("functions.R")

@@ -15,11 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build image
-        run: docker build --tag $IMAGE_NAME .
-
       - name: Log in to registry
         run: docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+
+      - name: Build image
+        run: docker build --tag $IMAGE_NAME .
 
       - name: Push image
         run: |

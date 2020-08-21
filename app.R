@@ -60,7 +60,7 @@ ui <- bootstrapPage(
                   draggable = TRUE, height = "auto",
                   
                   h2("Local Lockdown"),
-                  p("This tool helps you find hospitals to use for Covid-19 testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals in or near highly vulnerable areas."),
+                  p("This tool helps you find hospitals and car parks to use for Covid-19 mobile testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals and car parks in or near highly vulnerable areas."),
                   
                   selectInput("lad", 
                               label = "Choose a Local Authority",

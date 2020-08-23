@@ -111,36 +111,38 @@ body_colwise <- dashboardBody(
         
         fluidRow(#title='demographic data',
             column(width = 12,
-               column(width = 4,
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "Latest Infection Rate"
+               column(width = 8,
+                      box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
+                          title = "Infection Rate (Covid-19 cases per 100,000 people tested)",
                           #Plot
-                      ),
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "Mean rate of Covid-19 cases over previous 3 weeks"
-                          #Plot
-                      )
+                          echarts4rOutput('latest_inf', height='220px')
+                      )#,
+                      # box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
+                      #     title = "Mean rate of Covid-19 cases over previous 3 weeks",
+                      #     #plot
+                      #     echarts4rOutput('avg_infs')
+                      # )
 
                ),
-               column(width = 4,
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "No. clinically extremely vulnerable"
-                          #Plot
-                          ),
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "Population living in highly deprived areas"
-                          #Plot
-                      )),
+               # column(width = 4,
+               #        box(width = NULL, solidHeader = TRUE, status = "primary",
+               #            title = "No. clinically extremely vulnerable"
+               #            #Plot
+               #            ),
+               #        box(width = NULL, solidHeader = TRUE, status = "primary",
+               #            title = "Population living in highly deprived areas"
+               #            #Plot
+               #        )),
                
                column(width = 4,
                       box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
                           title = "Population Breakdown", align = 'center',
-                          echarts4rOutput('pop_breakdown', height='200px')
-                      ),
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
-                          title = "People recieving Section 95 support:"
-                          #Plot
-                      )
+                          echarts4rOutput('pop_breakdown', height='200px') #chart still goes out of bounds
+                      )#,
+                      # box(width = NULL, solidHeader = TRUE, status = "primary",
+                      #     title = "People recieving Section 95 support:"
+                      #     #Plot
+                      # )
                )
         )
     )
@@ -394,6 +396,37 @@ server <- function(input, output) {
             }
         
     })
+    
+    ### plotting infection rate statistics
+    output$latest_inf <- renderEcharts4r({
+        curr_stats = la_data %>% filter(Name == input$lad)
+        inf_stats = curr_stats %>% select('Name','Latest infection rate')
+        #if there's a value for it
+        if (!is.na(curr_stats$`Latest infection rate`)) {
+           
+            #transpose
+            inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
+            inf_rate <- inf_rate %>% mutate(avg_eng=11.5)
+            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`,avg_eng=10.4, .before=1)
+            
+            area = paste0('Infection rate for: ', input$lad)
+            
+            #plot
+            scatter <- inf_rate %>% e_charts(x=stat) %>%
+                e_line(value, name=area, symbolSize=12) %>%
+                e_line(avg_eng, name='England Avg',symbolSize=12) %>%
+                e_tooltip()
+        
+    
+        }
+        
+        else{
+            return(NULL)
+        }
+            
+        
+    })
+    
 }
 
 # Run app ----

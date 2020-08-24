@@ -365,16 +365,17 @@ server <- function(input, output) {
         
         #select bame columns
         bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
-        bame_stats = bame_stats %>% rename("White UK Born" = "Percentage of population who are white UK born") %>% rename('White not UK born'="Percentage of population who are white not UK born") %>% rename('BAME UK born'="Percentage of population who are ethnic minority UK born") %>% rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
+        bame_stats = bame_stats %>% rename("White UK born" = "Percentage of population who are white UK born") %>% rename('White not UK born'="Percentage of population who are white not UK born") %>% rename('BAME UK born'="Percentage of population who are ethnic minority UK born") %>% rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
         
             #if all elements not NA - assuming sums to 100
             if (all(!is.na(bame_stats))) {
                 # transpose dataframe
-                tbame_stats = bame_stats %>% pivot_longer(c("White UK Born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
                 #print(tbame_stats)
                 
                 pie <- tbame_stats %>% e_charts(x = population) %>%
-                    e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                    e_pie(proportion, legend = FALSE, name = "Population (%)") %>%
+                    e_grid(containLabel=TRUE) %>%
                     e_tooltip()
                 
             }
@@ -390,18 +391,20 @@ server <- function(input, output) {
 
                 else {
                     #transpose
-                    tbame_stats = bame_stats %>% pivot_longer(c("White UK Born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na=TRUE)
+                    tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na=TRUE)
                     #sum all values in row to see if they == 100 - if yes
                     if(sum(tbame_stats$proportion) == 100) {
                         #echart4R pie chart
                         pie <- tbame_stats %>% e_charts(x = population) %>%
                             e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                            e_grid(containLabel=TRUE) %>%
                             e_tooltip()
                     }
                     
                     else { # if not give user warning to check figures. 
                         pie <- tbame_stats %>% e_charts(x = population) %>%
                             e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                            e_grid(containLabel=TRUE) %>%
                             e_tooltip() %>% e_title("","check data (n!=100)", right=20)
                         
                     }

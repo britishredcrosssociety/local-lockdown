@@ -103,7 +103,7 @@ body_colwise <- dashboardBody(
     tags$head(includeCSS("styles.css")),
     tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
     fluidRow(
-        box(width = 12, height = '450px', solidHeader = TRUE, status = "primary",
+        box(width = 12, height = '450px', solidHeader = TRUE, status = "danger",
             title = "Neighborhood Vulnerability",
             leafletOutput("map", height='395px')
             #Plot
@@ -112,7 +112,7 @@ body_colwise <- dashboardBody(
         fluidRow(#title='demographic data',
             column(width = 12,
                column(width = 8,
-                      box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
+                      box(width = NULL, height='250px', solidHeader = TRUE, status = "danger",
                           title = "Infection Rate (Covid-19 cases per 100,000 people tested)",
                           #Plot
                           echarts4rOutput('latest_inf', height='210px')
@@ -126,7 +126,7 @@ body_colwise <- dashboardBody(
                ),
                
                column(width = 4,
-                      box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
+                      box(width = NULL, height='250px', solidHeader = TRUE, status = "danger",
                           title = "Population Breakdown", align = 'center',
                           echarts4rOutput('pop_breakdown', height='200px') #chart still goes out of bounds
                       )#,
@@ -141,19 +141,19 @@ body_colwise <- dashboardBody(
     fluidRow(
         column(width=12,
                column(width=4,
-                      box(width = NULL, solidHeader = TRUE, status = "primary",
+                      box(width = NULL, solidHeader = TRUE, status = "danger",
                             title = "No. clinically extremely vulnerable", height='250px', align='center',
                             echarts4rOutput('cl_vunl', height='250px')
                             )),
                 column(width = 4,
 
-                        box(width = NULL, solidHeader = TRUE, status = "primary",
+                        box(width = NULL, solidHeader = TRUE, status = "danger",
                             title = "Population living in highly deprived areas"
                       #            #Plot
                         )),
                       
                 column(width = 4,
-                       box(width = NULL, solidHeader = TRUE, status = "primary",
+                       box(width = NULL, solidHeader = TRUE, status = "danger",
                                 title = "People recieving Section 95 support:")#,
                 #        box(width = NULL, solidHeader = TRUE, status = "primary",
                 #            title = "Population living in highly deprived areas"

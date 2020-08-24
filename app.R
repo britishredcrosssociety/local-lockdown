@@ -167,16 +167,25 @@ body_colwise <- dashboardBody(
 
 ui <- dashboardPage(
     skin = "red",
-    dashboardHeader(title = "Local Lockdown"),
-    dashboardSidebar(id='local lockdown',
+    dashboardHeader(title = "Local Lockdown", titleWidth = '300px'),
+    dashboardSidebar(width='300px',
         #insert dropdown menu and text here
+        #p(" "),
+        #p(" "),
+        br(),
         p("This tool helps you find hospitals to use for Covid-19 testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals in or near highly vulnerable areas."), 
+        br(),
         selectInput("lad", label = "Choose a Local Authority",
                     choices = sort(la_data$Name)),
+        br(),
                                     
         selectInput("vi",
                     label = "Type of vulnerability",
                     choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
+        
+        br(),
+        br(),
+        br(),
                                        
         p("Developed by"), img(src = "brc-logo.jpg", width = 225)
                          

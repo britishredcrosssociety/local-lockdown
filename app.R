@@ -104,7 +104,7 @@ body_colwise <- dashboardBody(
     tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
     fluidRow(
         box(width = 12, height = '450px', solidHeader = TRUE, status = "primary",
-            title = "Hero Plot",
+            title = "Neighborhood Vulnerability",
             leafletOutput("map", height='395px')
             #Plot
         ),

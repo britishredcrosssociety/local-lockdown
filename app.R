@@ -498,9 +498,8 @@ server <- function(input, output) {
              clinic_vuln_bar <- tlad_clinic_vuln %>% e_charts(x=stat) %>%
                  #barWidth controls
                  e_bar(value, name=aoi) %>%
-                 e_bar(avg_eng, name='Avg for England',symbolSize=12) %>% 
+                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
                  e_grid(containLabel=TRUE) %>%
-                 e_x_axis(axislabels=list(show=FALSE)) %>%
                  e_tooltip()
     
          }

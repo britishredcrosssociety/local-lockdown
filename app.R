@@ -124,30 +124,46 @@ body_colwise <- dashboardBody(
                       # )
 
                ),
-               # column(width = 4,
-               #        box(width = NULL, solidHeader = TRUE, status = "primary",
-               #            title = "No. clinically extremely vulnerable"
-               #            #Plot
-               #            ),
-               #        box(width = NULL, solidHeader = TRUE, status = "primary",
-               #            title = "Population living in highly deprived areas"
-               #            #Plot
-               #        )),
                
                column(width = 4,
                       box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
                           title = "Population Breakdown", align = 'center',
-                          echarts4rOutput('pop_breakdown', height='200px') #chart still goes out of bounds
+                          echarts4rOutput('pop_breakdown', height='210px') #chart still goes out of bounds
                       )#,
                       # box(width = NULL, solidHeader = TRUE, status = "primary",
                       #     title = "People recieving Section 95 support:"
                       #     #Plot
                       # )
-               )
+               ),
+        #),
+    #),
+    
+    fluidRow(
+        column(width=12,
+               column(width=4,
+                      box(width = NULL, solidHeader = TRUE, status = "primary",
+                            title = "No. clinically extremely vulnerable", height='250px', align='center',
+                            echarts4rOutput('cl_vunl', height='250px')
+                            )),
+                column(width = 4,
+
+                        box(width = NULL, solidHeader = TRUE, status = "primary",
+                            title = "Population living in highly deprived areas"
+                      #            #Plot
+                        )),
+                      
+                column(width = 4,
+                       box(width = NULL, solidHeader = TRUE, status = "primary",
+                                title = "People recieving Section 95 support:")#,
+                #        box(width = NULL, solidHeader = TRUE, status = "primary",
+                #            title = "Population living in highly deprived areas"
+                #            #            #Plot
+                        )#)
+                      )
+                )
+            )
         )
-    )
-)
-)
+))
 
 ui <- dashboardPage(
     skin = "red",
@@ -427,6 +443,71 @@ server <- function(input, output) {
         
     })
     
+    #### Plotting number who are clinically vulnerable
+    # option 1 long plot showing all clinically vulnerable with bar showing user selected 
+    # output$cl_vunl <- renderEcharts4r({
+    #     #filter for just one of interest 
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     if (!is.na(curr_stats$`Clinically extremely vulnerable`)) {
+    #         # Clinically vulnerable of interest
+    #         #filter na's from la_data - add column fo colurs 
+    #         all_clinic_vuln <- la_data %>% select('Name', 'Clinically extremely vulnerable') %>% drop_na('Clinically extremely vulnerable') %>%
+    #             #add extra column for two series 
+    #             mutate('LAD_of_interest'=case_when(Name == input$lad ~ curr_stats$`Clinically extremely vulnerable`, Name != input$lad ~ NA_real_)) %>%
+    #             arrange(-desc(`Clinically extremely vulnerable`)) %>% relocate(`LAD_of_interest`, .before=`Clinically extremely vulnerable`)
+    #         
+    #         aoi <- paste0("No. of clinically vulnerable for: ", input$lad)
+    #         #print(all_clinic_vuln)
+    #         bar <- all_clinic_vuln %>% e_charts(x=Name) %>%
+    #             e_bar(`LAD_of_interest`, name=aoi, symboSize=12) %>%
+    #             e_line(`Clinically extremely vulnerable`, name='No. of clinical vulnerable') %>%
+    #             e_tooltip()
+    #         
+    #     }
+    #     
+    #     else {
+    #         return(NULL)
+    #     }
+    #     
+    # })
+    
+    #option two display as comparison to avg no. of clinically extremely vulnerable
+     output$cl_vunl <- renderEcharts4r({
+         #filter for just one of interest
+         curr_stats = la_data %>% filter(Name == input$lad)
+         if (!is.na(curr_stats$`Clinically extremely vulnerable`)) {
+             
+             #filter na's from la_data
+             all_clinic_vuln <- la_data %>% select('Name', 'Clinically extremely vulnerable') %>% drop_na('Clinically extremely vulnerable') 
+             # calculate average
+             mean_clinic_vul <- all_clinic_vuln %>% summarise(avg_eng_vuln=mean(`Clinically extremely vulnerable`))
+             
+             # Extract just columns for LAD of interest and append England average
+             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=mean_clinic_vul$avg_eng_vuln)
+        
+             #pivot 
+             tlad_clinic_vuln <- lad_clinic_vuln %>% pivot_longer(c('Clinically extremely vulnerable'), names_to='stat', values_to='value' )
+        
+             #lad specific label
+             aoi <- paste0("LAD: ", input$lad)
+             
+    #        #plot clinical vulnerability
+             clinic_vuln_bar <- tlad_clinic_vuln %>% e_charts(x=stat) %>%
+                 #barWidth controls
+                 e_bar(value, name=aoi) %>%
+                 e_bar(avg_eng, name='Avg for England',symbolSize=12) %>% 
+                 e_grid(containLabel=TRUE) %>%
+                 e_x_axis(axislabels=list(show=FALSE)) %>%
+                 e_tooltip()
+    
+         }
+    
+         else {
+             return(NULL)
+         }
+    
+     })
+
 }
 
 # Run app ----

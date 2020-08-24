@@ -115,7 +115,7 @@ body_colwise <- dashboardBody(
                       box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
                           title = "Infection Rate (Covid-19 cases per 100,000 people tested)",
                           #Plot
-                          echarts4rOutput('latest_inf', height='220px')
+                          echarts4rOutput('latest_inf', height='210px')
                       )#,
                       # box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
                       #     title = "Mean rate of Covid-19 cases over previous 3 weeks",
@@ -128,7 +128,7 @@ body_colwise <- dashboardBody(
                column(width = 4,
                       box(width = NULL, height='250px', solidHeader = TRUE, status = "primary",
                           title = "Population Breakdown", align = 'center',
-                          echarts4rOutput('pop_breakdown', height='210px') #chart still goes out of bounds
+                          echarts4rOutput('pop_breakdown', height='200px') #chart still goes out of bounds
                       )#,
                       # box(width = NULL, solidHeader = TRUE, status = "primary",
                       #     title = "People recieving Section 95 support:"

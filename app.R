@@ -437,14 +437,17 @@ server <- function(input, output) {
            
             #transpose
             inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
-            inf_rate <- inf_rate %>% mutate(avg_eng=11.5)
-            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`,avg_eng=10.4, .before=1)
-            
+            inf_rate <- inf_rate %>% mutate(avg_eng=11.5) %>% mutate(value_round = round(value, 1))
+            #round lad 3 week infection average
+            round_lad3week <- round(curr_stats$`Mean infection rate over last 3 weeks`, 1)
+            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`, value_round=round_lad3week, avg_eng=10.4, .before=1)
+    
+          
             area = paste0('Infection rate for: ', input$lad)
             
             #plot
             scatter <- inf_rate %>% e_charts(x=stat) %>%
-                e_line(value, name=area, symbolSize=12) %>%
+                e_line(value_round, name=area, symbolSize=12) %>%
                 e_line(avg_eng, name='England Avg',symbolSize=12) %>%
                 e_tooltip()
         
@@ -498,7 +501,7 @@ server <- function(input, output) {
              mean_clinic_vul <- all_clinic_vuln %>% summarise(avg_eng_vuln=mean(`Clinically extremely vulnerable`))
              
              # Extract just columns for LAD of interest and append England average
-             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=mean_clinic_vul$avg_eng_vuln)
+             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=round(mean_clinic_vul$avg_eng_vuln, 0))
         
              #pivot 
              tlad_clinic_vuln <- lad_clinic_vuln %>% pivot_longer(c('Clinically extremely vulnerable'), names_to='stat', values_to='value' )

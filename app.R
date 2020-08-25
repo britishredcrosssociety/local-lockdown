@@ -19,10 +19,8 @@ library(scales)
 library(shinydashboard)
 library(shinyWidgets)
 
-# what to use for the plots?
-library(ggplot2)
-library('ggiraph')
-#or R wrapper for javascript echarts package -  
+
+#for plots 
 library('echarts4r')
 
 # ---- Load data ----

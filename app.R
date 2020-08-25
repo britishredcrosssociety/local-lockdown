@@ -148,8 +148,8 @@ body_colwise <- dashboardBody(
                 column(width = 4,
 
                         box(width = NULL, solidHeader = TRUE, status = "danger",
-                            title = "Population living in highly deprived areas"
-                      #            #Plot
+                            title = "Population living in highly deprived areas", height='250px', align='center',
+                                    echarts4rOutput('IMD', height='250px')
                         )),
                       
                 column(width = 4,
@@ -518,6 +518,45 @@ server <- function(input, output) {
          }
     
      })
+     
+     # Proportion of population living in highly deprived areas plot
+     output$IMD <- renderEcharts4r({
+         #filter for just one of interest
+         curr_stats = la_data %>% filter(Name == input$lad)
+         if (!is.na(curr_stats$`IMD 2019 - Extent`)) {
+             
+             #filter na's from la_data
+             IMD_vuln <- la_data %>% select('Name', 'IMD 2019 - Extent') %>% drop_na('IMD 2019 - Extent') 
+             
+             # calculate average
+             mean_IMD_vuln <- IMD_vuln %>% summarise(avg_eng_IMD=mean(`IMD 2019 - Extent`))
+             
+             # Extract just columns for LAD of interest and append England average
+             lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent') %>% mutate(avg_eng=round(mean_IMD_vuln$avg_eng_IMD * 100, 1)) %>% mutate(`Population living in highly deprived areas (%)` = round(`IMD 2019 - Extent` * 100, 1))
+             
+             #pivot 
+             tlad_IMD_vuln <- lad_IMD_vuln %>% pivot_longer(c(`Population living in highly deprived areas (%)`), names_to='stat', values_to='value')
+             
+             #lad specific label
+             aoi <- paste0("LAD: ", input$lad)
+             
+             # plot proportion living in highly deprived areas
+             IMD_prop_bar <- tlad_IMD_vuln %>% e_charts(x=stat) %>%
+                 #barWidth controls
+                 e_bar(value, name=aoi) %>%
+                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
+                 e_grid(containLabel=TRUE) %>%
+                 e_tooltip()
+             
+         }
+         
+         else {
+             return(NULL)
+         }
+         
+     })
+     
+     
 
 }
 

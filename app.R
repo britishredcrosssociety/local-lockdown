@@ -154,7 +154,10 @@ body_colwise <- dashboardBody(
                       
                 column(width = 4,
                        box(width = NULL, solidHeader = TRUE, status = "danger",
-                                title = "People recieving Section 95 support:")#,
+                                title = "People recieving Section 95 support", height='250px', align='center',
+                                echarts4rOutput('sec_95', height='250px')
+                           ),
+                                
                 #        box(width = NULL, solidHeader = TRUE, status = "primary",
                 #            title = "Population living in highly deprived areas"
                 #            #            #Plot
@@ -555,6 +558,46 @@ server <- function(input, output) {
          }
          
      })
+     
+     # No. of people recieving section 95 report 
+     output$sec_95 <- renderEcharts4r({
+         #filter for just one of interest
+         curr_stats = la_data %>% filter(Name == input$lad)
+         
+         if (!is.na(curr_stats$`People receiving Section 95 support`)) {
+             
+             #filter na's from la_data
+             all_sec_95 <- la_data %>% select('Name', 'People receiving Section 95 support') %>% drop_na('People receiving Section 95 support') 
+             # calculate average
+             mean_sec_95 <- all_sec_95 %>% summarise(avg_eng_sec_95=mean(`People receiving Section 95 support`))
+             
+             # Extract just columns for LAD of interest and append England average
+             lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') %>% mutate(avg_eng=round(mean_sec_95$avg_eng_sec_95, 0))
+             
+             #pivot 
+             tlad_sec_95 <- lad_sec_95 %>% pivot_longer(c('People receiving Section 95 support'), names_to='stat', values_to='value' )
+             
+             #lad specific label
+             aoi <- paste0("LAD: ", input$lad)
+             
+             #        #plot clinical vulnerability
+             sec_95_bar <- tlad_sec_95 %>% e_charts(x=stat) %>%
+                 #barWidth controls
+                 e_bar(value, name=aoi) %>%
+                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
+                 e_grid(containLabel=TRUE) %>%
+                 e_tooltip()
+             
+         }
+         
+         else {
+             return(NULL)
+         }
+         
+     })
+     
+     
+     
      
      
 

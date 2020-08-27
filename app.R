@@ -419,28 +419,36 @@ server <- function(input, output) {
                 #data doesn't exist
                 if (all(is.na(bame_stats))) {
                     #keep all the data even if all NAs
-                    # tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
-                    # 
-                    # #convert NAs to 0 with case when
-                    # #account for missing data or true zeros?
-                    # tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
-                    #     population == "White UK born" & is.na(proportion) ~ 0,
-                    #     population == "White not UK born" & is.na(proportion) ~ 0,
-                    #     population == "BAME UK born" & is.na(proportion) ~ 0,
-                    #     population == "BAME not UK born" & is.na(proportion) ~ 0,
-                    # ))
-                    # 
-                    # #
+                    tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+
+                    #convert NAs to 0 with case when not going to plot anything 
+                    tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                        population == "White UK born" & is.na(proportion) ~ 0,
+                        population == "White not UK born" & is.na(proportion) ~ 0,
+                        population == "BAME UK born" & is.na(proportion) ~ 0,
+                        population == "BAME not UK born" & is.na(proportion) ~ 0,
+                    ))
+
+                    #create title
+                    title = paste0('Data Unavailable')
+                    subtext = paste0("LAD: ", input$lad)
                     
-                    #pie <- bame_stats %>% e_title('No Data Available')
-                    return(NULL)
+                    #echart4R
+                    pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                        e_bar(to_plot, legend=F) %>%
+                        #e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
+                        e_grid(containLabel=TRUE) %>%
+                        e_flip_coords() %>%
+                        e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%', show=F), name='Percentage of population (%)', nameLocation='middle', nameGap=35, show=F) %>%
+                        e_y_axis(axisLabel = list(interval = 0, show=F), show=F) %>%
+                        e_tooltip() %>% 
+                        e_title(title, subtext)
                     
                 }
 
                 else {
                     #transpose and remove NAs
                     missing_data_or_genuine_zero = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na = TRUE)
-                    
                     
                     #sum all values in row to see if they == 100 - if yes 
                     if(sum(missing_data_or_genuine_zero$proportion) == 100) {
@@ -464,7 +472,6 @@ server <- function(input, output) {
                             population == "BAME not UK born" & is.na(proportion) ~ 0,
                         ))
                         
-                        print(tbame_stats)
                         
                         #lad specific legend label
                         aoi <- paste0("LAD: ", input$lad)
@@ -543,7 +550,6 @@ server <- function(input, output) {
             #round lad 3 week infection average
             round_lad3week <- round(curr_stats$`Mean infection rate over last 3 weeks`, 1)
             inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`, value_round=round_lad3week, avg_eng=10.4, .before=1)
-    
           
             area = paste0('Infection rate for: ', input$lad)
             
@@ -557,7 +563,26 @@ server <- function(input, output) {
         }
         
         else{
-            return(NULL)
+            #plot message saying data unavailable
+            inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
+            
+            #convert NAs to 0 with case when not going to plot anything 
+            inf_rate = inf_rate %>% mutate(to_plot = case_when(
+                is.na(value) ~ 0,
+            ))
+            
+            #create title
+            title = paste0('Data Unavailable')
+            subtext = paste0("LAD: ", input$lad)
+            
+            #echart4R
+            pop_plot <- inf_rate %>% e_charts(x = stat) %>%
+                e_scatter(to_plot, legend=F) %>%
+                e_x_axis(show=F) %>%
+                e_y_axis(show=F) %>%
+                e_tooltip() %>% 
+                e_title(title, subtext)
+            
         }
             
         
@@ -598,7 +623,28 @@ server <- function(input, output) {
          }
     
          else {
-             return(NULL)
+             
+             #plot message saying data unavailable
+             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable')
+             
+             #convert NAs to 0 with case when not going to plot anything 
+             lad_clinic_vuln = lad_clinic_vuln %>% mutate(to_plot = case_when(
+                 is.na(`Clinically extremely vulnerable`) ~ 0,
+             ))
+             
+             #create title
+             title = paste0('Data Unavailable')
+             subtext = paste0("LAD: ", input$lad)
+             
+             #echart4R
+             pop_plot <- lad_clinic_vuln %>% e_charts(x = Name) %>%
+                 e_bar(to_plot, legend=F) %>%
+                 e_x_axis(show=F) %>%
+                 e_y_axis(show=F) %>%
+                 e_tooltip() %>% 
+                 e_title(title, subtext)
+             
+             
          }
     
      })
@@ -638,7 +684,28 @@ server <- function(input, output) {
          }
          
          else {
-             return(NULL)
+             
+             # get one with no data
+             lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent')
+             
+             #convert NAs to 0 with case when not going to plot anything 
+             lad_IMD_vuln =  lad_IMD_vuln %>% mutate(to_plot = case_when(
+                 is.na(`IMD 2019 - Extent`) ~ 0,
+             ))
+             
+             #create title
+             title = paste0('Data Unavailable')
+             subtext = paste0("LAD: ", input$lad)
+             
+             #echart4R
+             pop_plot <-  lad_IMD_vuln %>% e_charts(x = Name) %>%
+                 e_bar(to_plot, legend=F) %>%
+                 e_x_axis(show=F) %>%
+                 e_y_axis(show=F) %>%
+                 e_tooltip() %>% 
+                 e_title(title, subtext)
+             
+             
          }
          
      })
@@ -678,14 +745,30 @@ server <- function(input, output) {
          }
          
          else {
-             return(NULL)
+             
+             lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') 
+             
+             
+             #convert NAs to 0 with case when not going to plot anything 
+             lad_sec_95 =  lad_sec_95 %>% mutate(to_plot = case_when(
+                 is.na(`People receiving Section 95 support`) ~ 0,
+             ))
+             
+             #create title
+             title = paste0('Data Unavailable')
+             subtext = paste0("LAD: ", input$lad)
+             
+             #echart4R
+             pop_plot <-  lad_sec_95 %>% e_charts(x = Name) %>%
+                 e_bar(to_plot, legend=F) %>%
+                 e_x_axis(show=F) %>%
+                 e_y_axis(show=F) %>%
+                 e_tooltip() %>% 
+                 e_title(title, subtext)
+             
          }
          
      })
-     
-     
-     
-     
      
 
 }

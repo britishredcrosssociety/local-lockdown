@@ -141,19 +141,18 @@ body_colwise <- dashboardBody(
                column(width=4,
                       box(width = NULL, solidHeader = TRUE, status = "danger",
                             title = "No. clinically extremely vulnerable", height='250px', align='center',
-                            echarts4rOutput('cl_vunl', height='250px')
+                            echarts4rOutput('cl_vunl', height='230px')
                             )),
                 column(width = 4,
-
                         box(width = NULL, solidHeader = TRUE, status = "danger",
                             title = "Population living in highly deprived areas", height='250px', align='center',
-                                    echarts4rOutput('IMD', height='250px')
+                                    echarts4rOutput('IMD', height='230px')
                         )),
                       
                 column(width = 4,
                        box(width = NULL, solidHeader = TRUE, status = "danger",
                                 title = "People recieving Section 95 support", height='250px', align='center',
-                                echarts4rOutput('sec_95', height='250px')
+                                echarts4rOutput('sec_95', height='230px')
                            ),
                                 
                 #        box(width = NULL, solidHeader = TRUE, status = "primary",
@@ -459,35 +458,8 @@ server <- function(input, output) {
         
     })
     
-    #### Plotting number who are clinically vulnerable
-    # option 1 long plot showing all clinically vulnerable with bar showing user selected 
-    # output$cl_vunl <- renderEcharts4r({
-    #     #filter for just one of interest 
-    #     curr_stats = la_data %>% filter(Name == input$lad)
-    #     if (!is.na(curr_stats$`Clinically extremely vulnerable`)) {
-    #         # Clinically vulnerable of interest
-    #         #filter na's from la_data - add column fo colurs 
-    #         all_clinic_vuln <- la_data %>% select('Name', 'Clinically extremely vulnerable') %>% drop_na('Clinically extremely vulnerable') %>%
-    #             #add extra column for two series 
-    #             mutate('LAD_of_interest'=case_when(Name == input$lad ~ curr_stats$`Clinically extremely vulnerable`, Name != input$lad ~ NA_real_)) %>%
-    #             arrange(-desc(`Clinically extremely vulnerable`)) %>% relocate(`LAD_of_interest`, .before=`Clinically extremely vulnerable`)
-    #         
-    #         aoi <- paste0("No. of clinically vulnerable for: ", input$lad)
-    #         #print(all_clinic_vuln)
-    #         bar <- all_clinic_vuln %>% e_charts(x=Name) %>%
-    #             e_bar(`LAD_of_interest`, name=aoi, symboSize=12) %>%
-    #             e_line(`Clinically extremely vulnerable`, name='No. of clinical vulnerable') %>%
-    #             e_tooltip()
-    #         
-    #     }
-    #     
-    #     else {
-    #         return(NULL)
-    #     }
-    #     
-    # })
     
-    #option two display as comparison to avg no. of clinically extremely vulnerable
+    # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable
      output$cl_vunl <- renderEcharts4r({
          #filter for just one of interest
          curr_stats = la_data %>% filter(Name == input$lad)
@@ -498,21 +470,24 @@ server <- function(input, output) {
              # calculate average
              mean_clinic_vul <- all_clinic_vuln %>% summarise(avg_eng_vuln=mean(`Clinically extremely vulnerable`))
              
-             # Extract just columns for LAD of interest and append England average
-             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=round(mean_clinic_vul$avg_eng_vuln, 0))
+             #format xasix label 
+             label = paste('Clinically', 'extremely', 'vulnerable',sep="\n")
+             
+             # Extract just columns for LAD of interest and append England average and label columns
+             lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=round(mean_clinic_vul$avg_eng_vuln, 0)) %>% mutate(label=label)
         
-             #pivot 
-             tlad_clinic_vuln <- lad_clinic_vuln %>% pivot_longer(c('Clinically extremely vulnerable'), names_to='stat', values_to='value' )
-        
-             #lad specific label
+             #lad specific legend label
              aoi <- paste0("LAD: ", input$lad)
              
-    #        #plot clinical vulnerability
-             clinic_vuln_bar <- tlad_clinic_vuln %>% e_charts(x=stat) %>%
+            #plot clinical vulnerability
+             clinic_vuln_bar <- lad_clinic_vuln %>% e_charts(x=label) %>%
                  #barWidth controls
-                 e_bar(value, name=aoi) %>%
-                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
+                 e_bar(`Clinically extremely vulnerable`, name=aoi) %>%
+                 e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
                  e_grid(containLabel=TRUE) %>%
+                 e_flip_coords() %>%
+                 e_x_axis(axisLabel = list(interval = 0, rotate = 45), name='No. of people', nameLocation='middle', nameGap=40) %>%
+                 e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
                  e_tooltip()
     
          }
@@ -535,21 +510,24 @@ server <- function(input, output) {
              # calculate average
              mean_IMD_vuln <- IMD_vuln %>% summarise(avg_eng_IMD=mean(`IMD 2019 - Extent`))
              
-             # Extract just columns for LAD of interest and append England average
-             lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent') %>% mutate(avg_eng=round(mean_IMD_vuln$avg_eng_IMD * 100, 1)) %>% mutate(`Population living in highly deprived areas (%)` = round(`IMD 2019 - Extent` * 100, 1))
+             label = paste('Population', 'living in highly', 'deprived area', sep="\n")
              
-             #pivot 
-             tlad_IMD_vuln <- lad_IMD_vuln %>% pivot_longer(c(`Population living in highly deprived areas (%)`), names_to='stat', values_to='value')
+             # Extract just columns for LAD of interest and append England average
+             lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent') %>% mutate(avg_eng=round(mean_IMD_vuln$avg_eng_IMD * 100, 1)) %>% mutate(`Population living in highly deprived areas (%)` = round(`IMD 2019 - Extent` * 100, 1)) %>% mutate(label=label)
              
              #lad specific label
              aoi <- paste0("LAD: ", input$lad)
              
              # plot proportion living in highly deprived areas
-             IMD_prop_bar <- tlad_IMD_vuln %>% e_charts(x=stat) %>%
+             IMD_prop_bar <- lad_IMD_vuln %>% e_charts(x=label) %>%
                  #barWidth controls
-                 e_bar(value, name=aoi) %>%
-                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
+                 e_bar(`Population living in highly deprived areas (%)`, name=aoi) %>%
+                 e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
                  e_grid(containLabel=TRUE) %>%
+                 e_flip_coords() %>%
+                 e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                 #e_format_x_axis(suffix='%') %>%
+                 e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
                  e_tooltip()
              
          }
@@ -572,21 +550,24 @@ server <- function(input, output) {
              # calculate average
              mean_sec_95 <- all_sec_95 %>% summarise(avg_eng_sec_95=mean(`People receiving Section 95 support`))
              
-             # Extract just columns for LAD of interest and append England average
-             lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') %>% mutate(avg_eng=round(mean_sec_95$avg_eng_sec_95, 0))
+             #format xasix label 
+             label = paste('People recieving', 'Section 95', 'support',sep="\n")
              
-             #pivot 
-             tlad_sec_95 <- lad_sec_95 %>% pivot_longer(c('People receiving Section 95 support'), names_to='stat', values_to='value' )
+             # Extract just columns for LAD of interest and append England average
+             lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') %>% mutate(avg_eng=round(mean_sec_95$avg_eng_sec_95, 0)) %>% mutate(label=label)
              
              #lad specific label
              aoi <- paste0("LAD: ", input$lad)
              
-             #        #plot clinical vulnerability
-             sec_95_bar <- tlad_sec_95 %>% e_charts(x=stat) %>%
+             #Section 95 support
+             sec_95_bar <- lad_sec_95 %>% e_charts(x=label) %>%
                  #barWidth controls
-                 e_bar(value, name=aoi) %>%
-                 e_bar(avg_eng, name='England Avg',symbolSize=12) %>% 
+                 e_bar(`People receiving Section 95 support`, name=aoi) %>%
+                 e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
                  e_grid(containLabel=TRUE) %>%
+                 e_flip_coords() %>%
+                 e_x_axis(axisLabel = list(interval = 0, rotate = 45), name='No. of people', nameLocation='middle', nameGap=35) %>%
+                 e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
                  e_tooltip()
              
          }

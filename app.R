@@ -126,7 +126,7 @@ body_colwise <- dashboardBody(
                column(width = 4,
                       box(width = NULL, height='250px', solidHeader = TRUE, status = "danger",
                           title = "Population Breakdown", align = 'center',
-                          echarts4rOutput('pop_breakdown', height='200px') #chart still goes out of bounds
+                          echarts4rOutput('pop_breakdown', height='230px') 
                       )#,
                       # box(width = NULL, solidHeader = TRUE, status = "primary",
                       #     title = "People recieving Section 95 support:"
@@ -376,15 +376,41 @@ server <- function(input, output) {
         bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
         bame_stats = bame_stats %>% rename("White UK born" = "Percentage of population who are white UK born") %>% rename('White not UK born'="Percentage of population who are white not UK born") %>% rename('BAME UK born'="Percentage of population who are ethnic minority UK born") %>% rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
         
-            #if all elements not NA - assuming sums to 100
-            if (all(!is.na(bame_stats))) {
+        #avg for each category
+        white_uk = la_data %>% select("Percentage of population who are white UK born") %>% drop_na('Percentage of population who are white UK born') %>% mutate(avg_white_uk = mean(`Percentage of population who are white UK born`))
+        white_uk = round(white_uk$avg_white_uk[1], 1)
+        
+        white_nuk = la_data %>% select("Percentage of population who are white not UK born") %>% drop_na('Percentage of population who are white not UK born') %>% mutate(avg_white_nuk = mean(`Percentage of population who are white not UK born`))
+        white_nuk = round(white_nuk$avg_white_nuk[1], 1)
+        
+        bame_uk = la_data %>% select("Percentage of population who are ethnic minority UK born") %>% drop_na('Percentage of population who are ethnic minority UK born') %>% mutate(avg_bame_uk = mean(`Percentage of population who are ethnic minority UK born`))
+        bame_uk = round(bame_uk$avg_bame_uk[1], 1)
+        
+        bame_nuk = la_data %>% select("Percentage of population who are ethnic minority not UK born") %>% drop_na('Percentage of population who are ethnic minority not UK born') %>% mutate(avg_bame_nuk = mean(`Percentage of population who are ethnic minority not UK born`))
+        bame_nuk = round(bame_nuk$avg_bame_nuk[1], 1)
+        
+        all_avgs = c(white_uk, white_nuk, bame_uk, bame_nuk)
+        
+        #if all elements not NA - assuming sums to 100
+        if (all(!is.na(bame_stats))) {
+                
+                #lad specific legend label
+                aoi <- paste0("LAD: ", input$lad)
+                
                 # transpose dataframe
                 tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
-                #print(tbame_stats)
                 
-                pie <- tbame_stats %>% e_charts(x = population) %>%
-                    e_pie(proportion, legend = FALSE, name = "Population (%)") %>%
+                # add ENG averages
+                tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+                
+                # Plot population statistics
+                BAME_stats <- tbame_stats %>% e_charts(x = population) %>%
+                    e_bar(proportion, name = aoi) %>%
+                    e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
                     e_grid(containLabel=TRUE) %>%
+                    e_flip_coords() %>%
+                    e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                    e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
                     e_tooltip()
                 
             }
@@ -392,30 +418,109 @@ server <- function(input, output) {
             else {
                 #data doesn't exist
                 if (all(is.na(bame_stats))) {
-                    # at the moment it just leaves it blank
+                    #keep all the data even if all NAs
+                    # tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                    # 
+                    # #convert NAs to 0 with case when
+                    # #account for missing data or true zeros?
+                    # tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                    #     population == "White UK born" & is.na(proportion) ~ 0,
+                    #     population == "White not UK born" & is.na(proportion) ~ 0,
+                    #     population == "BAME UK born" & is.na(proportion) ~ 0,
+                    #     population == "BAME not UK born" & is.na(proportion) ~ 0,
+                    # ))
+                    # 
+                    # #
+                    
                     #pie <- bame_stats %>% e_title('No Data Available')
                     return(NULL)
                     
                 }
 
                 else {
-                    #transpose
-                    tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na=TRUE)
-                    #sum all values in row to see if they == 100 - if yes
-                    if(sum(tbame_stats$proportion) == 100) {
+                    #transpose and remove NAs
+                    missing_data_or_genuine_zero = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na = TRUE)
+                    
+                    
+                    #sum all values in row to see if they == 100 - if yes 
+                    if(sum(missing_data_or_genuine_zero$proportion) == 100) {
+                        # NA in whichever column represents zero
+                        
+                        #get data
+                        tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                        
+                        #add england averages 
+                        tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+                        
+                        #account for missing data or true zeros?
+                        tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                            population == "White UK born" & !is.na(proportion) ~ proportion,
+                            population == "White UK born" & is.na(proportion) ~ 0,
+                            population == "White not UK born" & !is.na(proportion) ~ proportion,
+                            population == "White not UK born" & is.na(proportion) ~ 0,
+                            population == "BAME UK born" & !is.na(proportion) ~ proportion,
+                            population == "BAME UK born" & is.na(proportion) ~ 0,
+                            population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+                            population == "BAME not UK born" & is.na(proportion) ~ 0,
+                        ))
+                        
+                        print(tbame_stats)
+                        
+                        #lad specific legend label
+                        aoi <- paste0("LAD: ", input$lad)
+                        
                         #echart4R pie chart
-                        pie <- tbame_stats %>% e_charts(x = population) %>%
-                            e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
+                        pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                            e_bar(to_plot, name = aoi) %>%
+                            e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
                             e_grid(containLabel=TRUE) %>%
+                            e_flip_coords() %>%
+                            e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                            e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
                             e_tooltip()
+                        
                     }
                     
                     else { # if not give user warning to check figures. 
-                        pie <- tbame_stats %>% e_charts(x = population) %>%
-                            e_pie(proportion, legend = FALSE, name = "Population (%)") %>% 
-                            e_grid(containLabel=TRUE) %>%
-                            e_tooltip() %>% e_title("","check data (n!=100)", right=20)
+                        # NA in whichever column represents missing data..
                         
+                        #get data
+                        tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                        
+                        #add england averages 
+                        tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+                        
+                        #account for missing data or true zeros?
+                        tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                            population == "White UK born" & !is.na(proportion) ~ proportion,
+                            population == "White UK born" & is.na(proportion) ~ NA_real_,
+                            population == "White not UK born" & !is.na(proportion) ~ proportion,
+                            population == "White not UK born" & is.na(proportion) ~ NA_real_,
+                            population == "BAME UK born" & !is.na(proportion) ~ proportion,
+                            population == "BAME UK born" & is.na(proportion) ~ NA_real_,
+                            population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+                            population == "BAME not UK born" & is.na(proportion) ~ NA_real_,
+                        ))
+                        
+                        #remove NAs
+                        tbame_stats = tbame_stats %>% drop_na('to_plot')
+                        
+                        #lad specific legend label
+                        aoi <- paste0("LAD: ", input$lad)
+                        
+                        # missing data note
+                        missing_data = paste("Warning","Missing data", "(n!=100)", sep="\n")
+                        
+                        #echart4R pie chart
+                        pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                            e_bar(to_plot, name = aoi) %>%
+                            e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
+                            e_grid(containLabel=TRUE) %>%
+                            e_flip_coords() %>%
+                            e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                            e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                            e_tooltip() %>% 
+                            e_title("", missing_data, bottom=40, left=1)
                     }
                     
                    

@@ -9,6 +9,10 @@ library(dplyr)
 library(sf)
 library(leaflet)
 library(scales)
+library(shinydashboard)
+library(shinyWidgets)
+#for plots 
+library('echarts4r')
 
 # ---- Load data ----
 source("functions.R")
@@ -44,39 +48,123 @@ la_data = la_data %>% filter(str_sub(LAD19CD, 1, 1) == "E")
 vi = vi %>% filter(str_sub(LAD19CD, 1, 1) == "E")
 
 
-# ---- UI ----
-ui <- bootstrapPage(
+# # ---- UI ----
+# ui <- bootstrapPage(
+#     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+#     
+#     tags$head(includeCSS("styles.css")),
+#     tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
+#     
+#     leafletOutput("map", width = "100%", height = "100%"),
+#     
+#     absolutePanel(id = "controls", class = "panel panel-default",
+#                   top = 10, left = 50, bottom = "auto", width = 330, fixed = TRUE,
+#                   draggable = TRUE, height = "auto",
+#                   
+#                   h2("Local Lockdown"),
+#                   p("This tool helps you find hospitals and car parks to use for Covid-19 mobile testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals and car parks in or near highly vulnerable areas."),
+#                   
+#                   selectInput("lad", 
+#                               label = "Choose a Local Authority",
+#                               choices = sort(la_data$Name)),
+#                   
+#                   selectInput("vi",
+#                               label = "Type of vulnerability",
+#                               choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
+#                   
+#                   p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+#     ),
+#     
+#     absolutePanel(id = "controls", class = "panel panel-default",
+#                   top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
+#                   draggable = TRUE, height = "auto",
+#                   
+#                   htmlOutput("la_stats")
+#     )
+# )
+
+
+#https://community.rstudio.com/t/big-box-beside-4-small-boxes-using-shinydashboard/39489
+body_colwise <- dashboardBody(
     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
-    
     tags$head(includeCSS("styles.css")),
     tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
-    
-    leafletOutput("map", width = "100%", height = "100%"),
-    
-    absolutePanel(id = "controls", class = "panel panel-default",
-                  top = 10, left = 50, bottom = "auto", width = 330, fixed = TRUE,
-                  draggable = TRUE, height = "auto",
-                  
-                  h2("Local Lockdown"),
-                  p("This tool helps you find hospitals and car parks to use for Covid-19 mobile testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals and car parks in or near highly vulnerable areas."),
-                  
-                  selectInput("lad", 
-                              label = "Choose a Local Authority",
-                              choices = sort(la_data$Name)),
-                  
-                  selectInput("vi",
-                              label = "Type of vulnerability",
-                              choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
-                  
-                  p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+    fluidRow(
+        box(width = 12, height = '450px', solidHeader = TRUE, status = "danger",
+            title = "Neighbourhood Vulnerability",
+            leafletOutput("map", height='395px')
+        ),
+        
+        fluidRow(#title='demographic data',
+            column(width = 12,
+                   column(width = 8,
+                          box(width = NULL, height='250px', solidHeader = TRUE, status = "danger",
+                              title = "Infection Rate (Covid-19 cases per 100,000 people tested)",
+                              #Plot
+                              echarts4rOutput('latest_inf', height='210px')
+                          )
+                          
+                   ),
+                   
+                   column(width = 4,
+                          box(width = NULL, height='250px', solidHeader = TRUE, status = "danger",
+                              title = "Population Breakdown", align = 'center',
+                              echarts4rOutput('pop_breakdown', height='230px') 
+                          )
+                   ),
+                   
+                   
+                   fluidRow(
+                       column(width=12,
+                              column(width=4,
+                                     box(width = NULL, solidHeader = TRUE, status = "danger",
+                                         title = "No. clinically extremely vulnerable", height='250px', align='center',
+                                         echarts4rOutput('cl_vunl', height='230px')
+                                     )),
+                              column(width = 4,
+                                     box(width = NULL, solidHeader = TRUE, status = "danger",
+                                         title = "Population living in highly deprived areas", height='250px', align='center',
+                                         echarts4rOutput('IMD', height='230px')
+                                     )),
+                              
+                              column(width = 4,
+                                     box(width = NULL, solidHeader = TRUE, status = "danger",
+                                         title = "People recieving Section 95 support", height='250px', align='center',
+                                         echarts4rOutput('sec_95', height='230px')
+                                     ),
+                              )
+                       )
+                   )
+            )
+        )
+    ))
+
+ui <- dashboardPage(
+    skin = "red",
+    dashboardHeader(title = "Local Lockdown", titleWidth = '300px'),
+    dashboardSidebar(width='300px',
+                     #insert dropdown menu and text here
+                     #p(" "),
+                     #p(" "),
+                     br(),
+                     p("This tool helps you find hospitals to use for Covid-19 testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals in or near highly vulnerable areas."), 
+                     br(),
+                     selectInput("lad", label = "Choose a Local Authority",
+                                 choices = sort(la_data$Name)),
+                     br(),
+                     
+                     selectInput("vi",
+                                 label = "Type of vulnerability",
+                                 choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")),
+                     
+                     br(),
+                     br(),
+                     br(),
+                     
+                     p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+                     
     ),
-    
-    absolutePanel(id = "controls", class = "panel panel-default",
-                  top = 10, left = "auto", right = 10, bottom = "auto", width = 330, fixed = TRUE,
-                  draggable = TRUE, height = "auto",
-                  
-                  htmlOutput("la_stats")
-    )
+    body_colwise
 )
 
 
@@ -124,9 +212,19 @@ server <- function(input, output) {
             
             # Add hospital markers
             addMarkers(data = markers_hosp,
-                       icon = hospital_icon,
-                       popup = ~popup)
+                       popup = ~popup,
+                       #icon=hospital_icon
+                       icon = list(iconUrl = 'www/hospital-red.png', iconSize=c(20,20))
+                      ) #%>%
+            
+            # Add carpark markers to firs displayed map?
+            #addMarkers(data = markers_car,
+            #           popup = ~popup,
+                       #icon=hospital_icon
+            #           icon = list(iconUrl = 'www/parking.png', iconSize=c(20,20))
+            #)
     })
+    
     
     # ---- Change map when user selects a Local Authority ----
     # Show data for and zoom to selected Local Authority
@@ -147,6 +245,7 @@ server <- function(input, output) {
             ))
     })
     
+    #IE not 100% sure this is working - when you change LAD the parking spaces from previously selected remain
     filteredCarPark <- reactive({
         # get code from selected LAD name
         lad_code = lad %>% filter(lad19nm == input$lad)
@@ -173,7 +272,7 @@ server <- function(input, output) {
             
             # Add car park markers
             addMarkers(data = filteredCarPark(),
-                              icon = carpark_icon,
+                              icon = list(iconUrl='www/parking.png',iconSize=c(20,20)),
                               popup = ~popup) %>%
         
             # addPolygons(fill = FALSE, color = "grey20", weight = 1) %>%  # Local Authority boundaries (don't really need them actually)
@@ -197,97 +296,507 @@ server <- function(input, output) {
     
     # ---- Reactive text outputs for Local Authority stats ----
     # LA statistics to display in top-right panel
-    output$la_stats = renderUI({  # render as HTML
-        str_stats = c()  # the string to build in this function
-        
+    # output$la_stats = renderUI({  # render as HTML
+    #     str_stats = c()  # the string to build in this function
+    #     
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Latest infection rate`))
+    #         str_stats = c(str_stats, paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")"))
+    # 
+    #     if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
+    #         str_stats = c(str_stats, paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")"))
+    #     
+    #     if (!is.na(curr_stats$`Clinically extremely vulnerable`))
+    #         str_stats = c(str_stats, paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")"))
+    #     
+    #     if (!is.na(curr_stats$`IMD 2019 - Extent`))
+    #         str_stats = c(str_stats, paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%"))
+    #     
+    #     if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
+    #         str_stats = c(str_stats, paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%"))
+    #     
+    #     if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
+    #         str_stats = c(str_stats, paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%"))
+    #     
+    #     if (!is.na(curr_stats$`People receiving Section 95 support`))
+    #         str_stats = c(str_stats, paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")"))
+    #     
+    #     HTML(paste(str_stats, collapse = "<br/><br/>"))
+    # })
+    # 
+    # output$infection_rate_latest = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Latest infection rate`))
+    #         paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$infection_rate_mean = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
+    #         paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$shielded = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Clinically extremely vulnerable`))
+    #         paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$deprivation = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`IMD 2019 - Extent`))
+    #         paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$bame_uk = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
+    #         paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$bame_non_uk = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
+    #         paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%")
+    #     else
+    #         ""
+    # })
+    # 
+    # output$asylum = renderText({
+    #     curr_stats = la_data %>% filter(Name == input$lad)
+    #     
+    #     if (!is.na(curr_stats$`People receiving Section 95 support`))
+    #         paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")")
+    #     else
+    #         ""
+    # })
+    
+    ### Local authority statistics plots ###
+    
+    #Population statistics bar chart
+    output$pop_breakdown = renderEcharts4r({
+        #select user input LA
         curr_stats = la_data %>% filter(Name == input$lad)
         
-        if (!is.na(curr_stats$`Latest infection rate`))
-            str_stats = c(str_stats, paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")"))
-
-        if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
-            str_stats = c(str_stats, paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")"))
+        #select bame columns
+        bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
+        bame_stats = bame_stats %>% rename("White UK born" = "Percentage of population who are white UK born") %>% rename('White not UK born'="Percentage of population who are white not UK born") %>% rename('BAME UK born'="Percentage of population who are ethnic minority UK born") %>% rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
         
-        if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            str_stats = c(str_stats, paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")"))
+        #avg for each category
+        white_uk = la_data %>% select("Percentage of population who are white UK born") %>% drop_na('Percentage of population who are white UK born') %>% mutate(avg_white_uk = mean(`Percentage of population who are white UK born`))
+        white_uk = round(white_uk$avg_white_uk[1], 1)
         
-        if (!is.na(curr_stats$`IMD 2019 - Extent`))
-            str_stats = c(str_stats, paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%"))
+        #white not uk born
+        white_nuk = la_data %>% select("Percentage of population who are white not UK born") %>% drop_na('Percentage of population who are white not UK born') %>% mutate(avg_white_nuk = mean(`Percentage of population who are white not UK born`))
+        white_nuk = round(white_nuk$avg_white_nuk[1], 1)
         
-        if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
-            str_stats = c(str_stats, paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%"))
+        #bame uk born
+        bame_uk = la_data %>% select("Percentage of population who are ethnic minority UK born") %>% drop_na('Percentage of population who are ethnic minority UK born') %>% mutate(avg_bame_uk = mean(`Percentage of population who are ethnic minority UK born`))
+        bame_uk = round(bame_uk$avg_bame_uk[1], 1)
         
-        if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
-            str_stats = c(str_stats, paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%"))
+        #bame not uk born
+        bame_nuk = la_data %>% select("Percentage of population who are ethnic minority not UK born") %>% drop_na('Percentage of population who are ethnic minority not UK born') %>% mutate(avg_bame_nuk = mean(`Percentage of population who are ethnic minority not UK born`))
+        bame_nuk = round(bame_nuk$avg_bame_nuk[1], 1)
         
-        if (!is.na(curr_stats$`People receiving Section 95 support`))
-            str_stats = c(str_stats, paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")"))
+        #Given there is data missing for some LAD I am unsure how accurate these averages are - maybe could hard code in using ONS statistics?
+        all_avgs = c(white_uk, white_nuk, bame_uk, bame_nuk)
         
-        HTML(paste(str_stats, collapse = "<br/><br/>"))
+        #if all elements not NA - have made assumption sums to 100
+        if (all(!is.na(bame_stats))) {
+            
+            #lad specific legend label
+            aoi <- paste0("LAD: ", input$lad)
+            
+            # transpose dataframe
+            tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+            
+            # add ENG averages
+            tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+            
+            # Plot population statistics
+            BAME_stats <- tbame_stats %>% e_charts(x = population) %>%
+                e_bar(proportion, name = aoi) %>%
+                e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
+                e_grid(containLabel=TRUE) %>%
+                e_flip_coords() %>%
+                e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                e_tooltip()
+            
+        }
+        
+        else {
+            #data doesn't exist
+            if (all(is.na(bame_stats))) {
+                #keep all the data even if all NAs
+                tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                
+                #convert NAs to 0 with case_when not going to plot anything 
+                tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                    population == "White UK born" & is.na(proportion) ~ 0,
+                    population == "White not UK born" & is.na(proportion) ~ 0,
+                    population == "BAME UK born" & is.na(proportion) ~ 0,
+                    population == "BAME not UK born" & is.na(proportion) ~ 0,
+                ))
+                
+                #create title
+                title = paste0('Data Unavailable')
+                subtext = paste0("LAD: ", input$lad)
+                
+                #echart4R
+                pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                    e_bar(to_plot, legend=F) %>%
+                    e_grid(containLabel=TRUE) %>%
+                    e_flip_coords() %>%
+                    # by using show=F no plot is produced.
+                    e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%', show=F), name='Percentage of population (%)', nameLocation='middle', nameGap=35, show=F) %>%
+                    e_y_axis(axisLabel = list(interval = 0, show=F), show=F) %>%
+                    e_tooltip() %>% 
+                    e_title(title, subtext)
+                
+            }
+            
+            else {
+                #transpose and remove NAs
+                missing_data_or_genuine_zero = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na = TRUE)
+                
+                #sum all values in row to see if they == 100 - if yes 
+                if(sum(missing_data_or_genuine_zero$proportion) == 100) {
+                    # NA in whichever column represents zero
+                    
+                    #get data
+                    tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                    
+                    #add england averages 
+                    tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+                    
+                    #account for missing data as true zeros?
+                    tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                        population == "White UK born" & !is.na(proportion) ~ proportion,
+                        population == "White UK born" & is.na(proportion) ~ 0,
+                        population == "White not UK born" & !is.na(proportion) ~ proportion,
+                        population == "White not UK born" & is.na(proportion) ~ 0,
+                        population == "BAME UK born" & !is.na(proportion) ~ proportion,
+                        population == "BAME UK born" & is.na(proportion) ~ 0,
+                        population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+                        population == "BAME not UK born" & is.na(proportion) ~ 0,
+                    ))
+                    
+                    
+                    #lad specific legend label
+                    aoi <- paste0("LAD: ", input$lad)
+                    
+                    #echart4R bar chart
+                    pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                        e_bar(to_plot, name = aoi) %>%
+                        e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
+                        e_grid(containLabel=TRUE) %>%
+                        e_flip_coords() %>%
+                        e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                        e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                        e_tooltip()
+                    
+                }
+                
+                else { # if values don't sum to 100 - give user warning to check figures. 
+                    # NA in whichever column represents missing data.
+                    #get data
+                    tbame_stats = bame_stats %>% pivot_longer(c("White UK born","White not UK born","BAME UK born","BAME not UK born"), names_to = "population", values_to = "proportion")
+                    
+                    #add england averages 
+                    tbame_stats = tbame_stats %>% mutate(eng_avg = all_avgs)
+                    
+                    #account for missing data with NA?
+                    tbame_stats = tbame_stats %>% mutate(to_plot = case_when(
+                        population == "White UK born" & !is.na(proportion) ~ proportion,
+                        population == "White UK born" & is.na(proportion) ~ NA_real_,
+                        population == "White not UK born" & !is.na(proportion) ~ proportion,
+                        population == "White not UK born" & is.na(proportion) ~ NA_real_,
+                        population == "BAME UK born" & !is.na(proportion) ~ proportion,
+                        population == "BAME UK born" & is.na(proportion) ~ NA_real_,
+                        population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+                        population == "BAME not UK born" & is.na(proportion) ~ NA_real_,
+                    ))
+                    
+                    #remove NAs
+                    tbame_stats = tbame_stats %>% drop_na('to_plot')
+                    
+                    #lad specific legend label
+                    aoi <- paste0("LAD: ", input$lad)
+                    
+                    # missing data note
+                    missing_data = paste("Warning","Missing data", "(n!=100)", sep="\n")
+                    
+                    #echart4R plot chart
+                    pop_plot <- tbame_stats %>% e_charts(x = population) %>%
+                        e_bar(to_plot, name = aoi) %>%
+                        e_scatter(eng_avg, name= 'England avg', symbolSize=8) %>%
+                        e_grid(containLabel=TRUE) %>%
+                        e_flip_coords() %>%
+                        e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                        e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                        e_tooltip() %>% 
+                        e_title("", missing_data, bottom=40, left=1)
+                }
+                
+                
+            }
+            
+        }
+        
     })
     
-    output$infection_rate_latest = renderText({
+    ### plotting infection rate statistics
+    output$latest_inf <- renderEcharts4r({
         curr_stats = la_data %>% filter(Name == input$lad)
+        inf_stats = curr_stats %>% select('Name','Latest infection rate')
         
-        if (!is.na(curr_stats$`Latest infection rate`))
-            paste0("Latest weekly Covid-19 cases per 100,000 people tested: ", round(curr_stats$`Latest infection rate`, 2), " (England average: ", round(mean(la_data$`Latest infection rate`, na.rm = TRUE), 2), ")")
-        else
-            ""
+        # At the moment only plots if there's a value in latest infection rate column 
+        # there are two LAD ('Redcar and Cleveland','Bracknell Forest') that have a past 3 week avg inf rate but not a current infection rate - these return no data available
+        if (!is.na(curr_stats$`Latest infection rate`)) {
+            
+            #transpose
+            inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
+            inf_rate <- inf_rate %>% mutate(avg_eng=11.5) %>% mutate(value_round = round(value, 1))
+            #round lad 3 week infection average
+            round_lad3week <- round(curr_stats$`Mean infection rate over last 3 weeks`, 1)
+            #add row with eng avg over past 3 weeks and latest - this is currently hard coded in - should this be a calculation based on the mean of each of the columns?
+            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`, value_round=round_lad3week, avg_eng=10.4, .before=1)
+            
+            #LAD specific legend 
+            area = paste0('Infection rate for: ', input$lad)
+            
+            #plot
+            scatter <- inf_rate %>% e_charts(x=stat) %>%
+                e_line(value_round, name=area, symbolSize=12) %>%
+                e_line(avg_eng, name='England Avg',symbolSize=12) %>%
+                e_tooltip()
+            
+            
+        }
+        
+        else{
+            #plot message saying data unavailable
+            inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
+            
+            #convert NAs to 0 with case when not going to plot anything 
+            inf_rate = inf_rate %>% mutate(to_plot = case_when(
+                is.na(value) ~ 0,
+            ))
+            
+            #create title
+            title = paste0('Data Unavailable')
+            subtext = paste0("LAD: ", input$lad)
+            
+            #echart4R
+            pop_plot <- inf_rate %>% e_charts(x = stat) %>%
+                e_scatter(to_plot, legend=F) %>%
+                e_x_axis(show=F) %>%
+                e_y_axis(show=F) %>%
+                e_tooltip() %>% 
+                e_title(title, subtext)
+            
+        }
+        
+        
     })
     
-    output$infection_rate_mean = renderText({
+    
+    # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable
+    output$cl_vunl <- renderEcharts4r({
+        #filter for just one of interest
         curr_stats = la_data %>% filter(Name == input$lad)
+        if (!is.na(curr_stats$`Clinically extremely vulnerable`)) {
+            
+            #filter na's from la_data
+            all_clinic_vuln <- la_data %>% select('Name', 'Clinically extremely vulnerable') %>% drop_na('Clinically extremely vulnerable') 
+            # calculate average
+            mean_clinic_vul <- all_clinic_vuln %>% summarise(avg_eng_vuln=mean(`Clinically extremely vulnerable`))
+            
+            #format xasix label 
+            label = paste('Clinically', 'extremely', 'vulnerable',sep="\n")
+            
+            # Extract just columns for LAD of interest and append England average and label columns
+            lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable') %>% mutate(avg_eng=round(mean_clinic_vul$avg_eng_vuln, 0)) %>% mutate(label=label)
+            
+            #lad specific legend label
+            aoi <- paste0("LAD: ", input$lad)
+            
+            #plot clinical vulnerability
+            clinic_vuln_bar <- lad_clinic_vuln %>% e_charts(x=label) %>%
+                e_bar(`Clinically extremely vulnerable`, name=aoi) %>%
+                e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
+                e_grid(containLabel=TRUE) %>%
+                e_flip_coords() %>%
+                e_x_axis(axisLabel = list(interval = 0, rotate = 45), name='No. of people', nameLocation='middle', nameGap=40) %>%
+                e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                e_tooltip()
+            
+        }
         
-        if (!is.na(curr_stats$`Mean infection rate over last 3 weeks`))
-            paste0("Mean rate of Covid-19 cases over previous 3 weeks: ", round(curr_stats$`Mean infection rate over last 3 weeks`, 2), " (England average: ", round(mean(la_data$`Mean infection rate over last 3 weeks`, na.rm = TRUE), 2), ")")
-        else
-            ""
+        else {
+            
+            #plot message saying data unavailable
+            lad_clinic_vuln <- curr_stats %>% select('Name', 'Clinically extremely vulnerable')
+            
+            #convert NAs to 0 with case when not going to plot anything 
+            lad_clinic_vuln = lad_clinic_vuln %>% mutate(to_plot = case_when(
+                is.na(`Clinically extremely vulnerable`) ~ 0,
+            ))
+            
+            #create title
+            title = paste0('Data Unavailable')
+            subtext = paste0("LAD: ", input$lad)
+            
+            #echart4R
+            pop_plot <- lad_clinic_vuln %>% e_charts(x = Name) %>%
+                e_bar(to_plot, legend=F) %>%
+                e_x_axis(show=F) %>%
+                e_y_axis(show=F) %>%
+                e_tooltip() %>% 
+                e_title(title, subtext)
+            
+            
+        }
+        
     })
     
-    output$shielded = renderText({
+    # Proportion of population living in highly deprived areas plot
+    output$IMD <- renderEcharts4r({
+        #filter for just one of interest
         curr_stats = la_data %>% filter(Name == input$lad)
+        if (!is.na(curr_stats$`IMD 2019 - Extent`)) {
+            
+            #filter na's from la_data
+            IMD_vuln <- la_data %>% select('Name', 'IMD 2019 - Extent') %>% drop_na('IMD 2019 - Extent') 
+            
+            # calculate average
+            mean_IMD_vuln <- IMD_vuln %>% summarise(avg_eng_IMD=mean(`IMD 2019 - Extent`))
+            
+            #format axis label
+            label = paste('Population', 'living in highly', 'deprived area', sep="\n")
+            
+            # Extract just columns for LAD of interest and append England average
+            lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent') %>% mutate(avg_eng=round(mean_IMD_vuln$avg_eng_IMD * 100, 1)) %>% mutate(`Population living in highly deprived areas (%)` = round(`IMD 2019 - Extent` * 100, 1)) %>% mutate(label=label)
+            
+            #lad specific legend
+            aoi <- paste0("LAD: ", input$lad)
+            
+            # plot proportion living in highly deprived areas
+            IMD_prop_bar <- lad_IMD_vuln %>% e_charts(x=label) %>%
+                e_bar(`Population living in highly deprived areas (%)`, name=aoi) %>%
+                e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
+                e_grid(containLabel=TRUE) %>%
+                e_flip_coords() %>%
+                e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter='{value}%'), name='Percentage of population (%)', nameLocation='middle', nameGap=35) %>%
+                #e_format_x_axis(suffix='%') %>%
+                e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                e_tooltip()
+            
+        }
         
-        if (!is.na(curr_stats$`Clinically extremely vulnerable`))
-            paste0("No. clinically extremely vulnerable: ", comma(curr_stats$`Clinically extremely vulnerable`), " (England total: ", comma(sum(la_data$`Clinically extremely vulnerable`, na.rm = TRUE)), ")")
-        else
-            ""
+        else {
+            
+            # get one with no data
+            lad_IMD_vuln <- curr_stats %>% select('Name', 'IMD 2019 - Extent')
+            
+            #convert NAs to 0 with case when not going to plot anything 
+            lad_IMD_vuln =  lad_IMD_vuln %>% mutate(to_plot = case_when(
+                is.na(`IMD 2019 - Extent`) ~ 0,
+            ))
+            
+            #create title
+            title = paste0('Data Unavailable')
+            subtext = paste0("LAD: ", input$lad)
+            
+            #echart4R
+            pop_plot <-  lad_IMD_vuln %>% e_charts(x = Name) %>%
+                e_bar(to_plot, legend=F) %>%
+                e_x_axis(show=F) %>%
+                e_y_axis(show=F) %>%
+                e_tooltip() %>% 
+                e_title(title, subtext)
+            
+            
+        }
+        
     })
     
-    output$deprivation = renderText({
+    # No. of people recieving section 95 report 
+    output$sec_95 <- renderEcharts4r({
+        #filter for just one of interest
         curr_stats = la_data %>% filter(Name == input$lad)
         
-        if (!is.na(curr_stats$`IMD 2019 - Extent`))
-            paste0("Population living in highly deprived areas: ", round(curr_stats$`IMD 2019 - Extent` * 100, 1), "%")
-        else
-            ""
+        if (!is.na(curr_stats$`People receiving Section 95 support`)) {
+            
+            #filter na's from la_data
+            all_sec_95 <- la_data %>% select('Name', 'People receiving Section 95 support') %>% drop_na('People receiving Section 95 support') 
+            # calculate average
+            mean_sec_95 <- all_sec_95 %>% summarise(avg_eng_sec_95=mean(`People receiving Section 95 support`))
+            
+            #format axis label 
+            label = paste('People recieving', 'Section 95', 'support',sep="\n")
+            
+            # Extract just columns for LAD of interest and append England average
+            lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') %>% mutate(avg_eng=round(mean_sec_95$avg_eng_sec_95, 0)) %>% mutate(label=label)
+            
+            #lad specific label
+            aoi <- paste0("LAD: ", input$lad)
+            
+            #Section 95 support
+            sec_95_bar <- lad_sec_95 %>% e_charts(x=label) %>%
+                e_bar(`People receiving Section 95 support`, name=aoi) %>%
+                e_scatter(avg_eng, name='England avg',symbolSize=12) %>% 
+                e_grid(containLabel=TRUE) %>%
+                e_flip_coords() %>%
+                e_x_axis(axisLabel = list(interval = 0, rotate = 45), name='No. of people', nameLocation='middle', nameGap=35) %>%
+                e_y_axis(axisLabel = list(interval = 0, show=T)) %>%
+                e_tooltip()
+            
+        }
+        
+        else {
+            # lad with no section 95 data
+            lad_sec_95 <- curr_stats %>% select('Name', 'People receiving Section 95 support') 
+            
+            #convert NAs to 0 with case when not going to plot anything 
+            lad_sec_95 =  lad_sec_95 %>% mutate(to_plot = case_when(
+                is.na(`People receiving Section 95 support`) ~ 0,
+            ))
+            
+            #create title
+            title = paste0('Data Unavailable')
+            subtext = paste0("LAD: ", input$lad)
+            
+            #echart4R
+            pop_plot <-  lad_sec_95 %>% e_charts(x = Name) %>%
+                e_bar(to_plot, legend=F) %>%
+                e_x_axis(show=F) %>%
+                e_y_axis(show=F) %>%
+                e_tooltip() %>% 
+                e_title(title, subtext)
+            
+        }
+        
     })
     
-    output$bame_uk = renderText({
-        curr_stats = la_data %>% filter(Name == input$lad)
-        
-        if (!is.na(curr_stats$`Percentage of population who are ethnic minority UK born`))
-            paste0("BAME population, UK born: ", curr_stats$`Percentage of population who are ethnic minority UK born`, "%")
-        else
-            ""
-    })
-    
-    output$bame_non_uk = renderText({
-        curr_stats = la_data %>% filter(Name == input$lad)
-        
-        if (!is.na(curr_stats$`Percentage of population who are ethnic minority not UK born`))
-            paste0("BAME population, not UK born: ", curr_stats$`Percentage of population who are ethnic minority not UK born`, "%")
-        else
-            ""
-    })
-    
-    output$asylum = renderText({
-        curr_stats = la_data %>% filter(Name == input$lad)
-        
-        if (!is.na(curr_stats$`People receiving Section 95 support`))
-            paste0("People receiving Section 95 support: ", comma(curr_stats$`People receiving Section 95 support`), " (UK total: ", comma(sum(la_data$`People receiving Section 95 support`, na.rm = TRUE)), ")")
-        else
-            ""
-    })
 }
 
 # Run app ----

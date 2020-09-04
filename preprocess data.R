@@ -22,11 +22,10 @@ vi %>%
   left_join(msoa_lad, by = c("Code" = "MSOA11CD")) %>% 
   write_sf("data/vulnerability.geojson")
 
-
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
-# This URL corresponds to 31 July 2020 (week 31):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/909421/Weekly_COVID19_report_data_w33.xlsx",
+# This URL corresponds to 28 August 2020 (week 35):
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/912965/Weekly_COVID19_report_data_w35.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 11. All weeks rates UTLA", skip = 7)
@@ -53,7 +52,8 @@ unlink(tf); rm(tf)
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-shielded = read_csv("https://files.digital.nhs.uk/96/69FFAA/Coronavirus%20%28COVID-19%29%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20-%20LA%20-%202020-05-15.csv")
+# This URL corresponds to data extracted from 20 August 2020:
+shielded = read_csv("https://files.digital.nhs.uk/63/0A6FF2/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-08-20.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)
@@ -99,9 +99,9 @@ aps = aps_raw %>%
 
 
 # ---- Asylum ----
-# download the latest stats on Section 95 support by local authority
-# note: you'll need to manually update this URL whenever the Home Office releases new statistics
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/868203/section-95-support-local-authority-datasets-dec-2019.xlsx",
+# download the latest stats on Section 95 support by local authorit - https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
+#  This URL corresponds to data from June 2020:
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910573/section-95-support-local-authority-datasets-jun-2020.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 asylum_raw = read_excel(tf, sheet = "Data - Asy_D11")  # check the sheet name is still valid if you're updating the URL above
@@ -119,7 +119,6 @@ asylum = asylum %>%
   mutate(`People receiving Section 95 support` = `Dispersed Accommodation` + `Subsistence Only`)
 
 unlink(tf); rm(tf)
-
 
 # ---- Deprivation ----
 ## Load LA-level deprivation scores

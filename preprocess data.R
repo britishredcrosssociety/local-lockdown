@@ -24,8 +24,8 @@ vi %>%
 
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
-# This URL corresponds to 28 August 2020 (week 35):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/912965/Weekly_COVID19_report_data_w35.xlsx",
+# This URL corresponds to 4 September 2020 (week 36):
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/914814/Weekly_COVID19_report_data_w36.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 11. All weeks rates UTLA", skip = 7)
@@ -52,8 +52,8 @@ unlink(tf); rm(tf)
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-# This URL corresponds to data extracted from 20 August 2020:
-shielded = read_csv("https://files.digital.nhs.uk/63/0A6FF2/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-08-20.csv")
+# This URL corresponds to data extracted from 27 August 2020:
+shielded = read_csv("https://files.digital.nhs.uk/44/1D4817/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-08-27.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)

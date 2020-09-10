@@ -394,6 +394,7 @@ server <- function(input, output) {
     output$pop_breakdown = renderEcharts4r({
         #select user input LA
         curr_stats = la_data %>% filter(Name == input$lad)
+        #print(curr_stats)
         
         #select bame columns
         bame_stats = curr_stats %>% select("Percentage of population who are white UK born","Percentage of population who are white not UK born","Percentage of population who are ethnic minority UK born","Percentage of population who are ethnic minority not UK born")
@@ -563,62 +564,66 @@ server <- function(input, output) {
         
     })
     
-    ### plotting infection rate statistics
+    ## plotting infection rate statistics
     output$latest_inf <- renderEcharts4r({
         curr_stats = la_data %>% filter(Name == input$lad)
-        inf_stats = curr_stats %>% select('Name','Latest infection rate')
-        
-        # At the moment only plots if there's a value in latest infection rate column 
+        inf_stats = curr_stats %>% select('Name','Latest infection rate', 'upper', 'lower')
+
+
+        # At the moment only plots if there's a value in latest infection rate column
         # there are two LAD ('Redcar and Cleveland','Bracknell Forest') that have a past 3 week avg inf rate but not a current infection rate - these return no data available
         if (!is.na(curr_stats$`Latest infection rate`)) {
-            
+
             #transpose
             inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
-            inf_rate <- inf_rate %>% mutate(avg_eng=11.5) %>% mutate(value_round = round(value, 1))
+            inf_rate <- inf_rate %>% mutate(avg_eng=11.5) %>% mutate(value_round = round(value, 1)) %>% mutate('lower'= NA_real_) %>% mutate('upper'= NA_real_)
+        
             #round lad 3 week infection average
             round_lad3week <- round(curr_stats$`Mean infection rate over last 3 weeks`, 1)
-            #add row with eng avg over past 3 weeks and latest - this is currently hard coded in - should this be a calculation based on the mean of each of the columns?
-            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`, value_round=round_lad3week, avg_eng=10.4, .before=1)
             
-            #LAD specific legend 
+            #add row with eng avg over past 3 weeks and the LADs avg over previous 3 weeks- this is currently hard coded in - should this be a calculation based on the mean of each of the columns?
+            inf_rate <- inf_rate %>% add_row(stat='avg over previous 3 weeks',value=curr_stats$`Mean infection rate over last 3 weeks`, value_round=round_lad3week, avg_eng=10.4, lower=curr_stats$lower, upper=curr_stats$upper, .before=1)
+           
+            #LAD specific legend
             area = paste0('Infection rate for: ', input$lad)
-            
+
             #plot
             scatter <- inf_rate %>% e_charts(x=stat) %>%
                 e_line(value_round, name=area, symbolSize=12) %>%
                 e_line(avg_eng, name='England Avg',symbolSize=12) %>%
+                e_error_bar(lower, upper, legend=F) %>%
                 e_tooltip()
-            
-            
+
+
         }
-        
+
         else{
             #plot message saying data unavailable
             inf_rate <- inf_stats %>% pivot_longer(c(`Latest infection rate`), names_to = "stat", values_to = "value")
-            
-            #convert NAs to 0 with case when not going to plot anything 
+
+            #convert NAs to 0 with case when not going to plot anything
             inf_rate = inf_rate %>% mutate(to_plot = case_when(
                 is.na(value) ~ 0,
             ))
-            
+
             #create title
             title = paste0('Data Unavailable')
             subtext = paste0("LAD: ", input$lad)
-            
+
             #echart4R
             pop_plot <- inf_rate %>% e_charts(x = stat) %>%
                 e_scatter(to_plot, legend=F) %>%
                 e_x_axis(show=F) %>%
                 e_y_axis(show=F) %>%
-                e_tooltip() %>% 
+                e_tooltip() %>%
                 e_title(title, subtext)
-            
+
         }
-        
-        
+
+
     })
     
-    
+
     # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable
     output$cl_vunl <- renderEcharts4r({
         #filter for just one of interest

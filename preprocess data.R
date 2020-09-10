@@ -42,11 +42,17 @@ covid = bind_rows(covid %>% filter(LAD19CD != "E09000012/E09000001"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000012"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000001"))
 
+
 # Calculate average rate for past three weeks, plus get latest rate
 covid_sum = covid %>% 
   rowwise() %>% 
   mutate(`Mean infection rate over last 3 weeks` = mean(c_across((ncol(covid) - 2):ncol(covid)), na.rm = TRUE)) %>% 
-  select(LAD19CD, `Latest infection rate` = ncol(covid), `Mean infection rate over last 3 weeks`)
+  mutate(`SD infection rate over last 3 weeks` = sd(c_across((ncol(covid) - 2):ncol(covid)), na.rm = TRUE)) %>% 
+  mutate(`upper`=`Mean infection rate over last 3 weeks` + `SD infection rate over last 3 weeks`) %>%
+  mutate(`lower`=`Mean infection rate over last 3 weeks` - `SD infection rate over last 3 weeks`) %>%
+  select(LAD19CD, `Latest infection rate` = ncol(covid), `Mean infection rate over last 3 weeks`, `upper`, `lower`)
+
+#print(covid_sum)
 
 unlink(tf); rm(tf)
 

@@ -645,15 +645,20 @@ server <- function(input, output) {
             #transpose
             inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
             
+            #to highlight current infection rate
+            y_point = inf_rate %>% select(value) %>% slice(n())
+            x_point = inf_rate %>% select(stat) %>% slice(n())
+            
             # add eng rates 
             inf_rate <- inf_rate %>% mutate(eng_cases = eng_stats$eng_cases)
-            #print(inf_rate)
+            
             
             #LAD specific legend
             area = paste0('Infection rate for: ', input$lad)
             
             #format xasix label 
             label = paste('Cases per', '100,000',sep="\n")
+            
                      
             #plot
             scatter <- inf_rate %>% e_charts(x=stat) %>%
@@ -661,6 +666,7 @@ server <- function(input, output) {
                         e_line(eng_cases, name='Eng cases per 100,000',symbolSize=8) %>%
                         e_x_axis(axisLabel = list(interval = 0), name='Week', nameLocation='middle', nameGap=25) %>%
                         e_y_axis(axisLabel = list(interval = 0), name=label, nameLocation='middle',nameGap=25) %>%
+                        e_mark_point(area, data=list(xAxis=x_point$stat, yAxis=y_point$value, value=y_point$value)) %>%
                         e_tooltip()
         }
         
@@ -695,14 +701,6 @@ server <- function(input, output) {
         
      })
      
-    
-    
-    
-    
-    
-    
-    
-    
     
 
     # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable

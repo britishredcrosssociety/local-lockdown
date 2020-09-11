@@ -128,7 +128,7 @@ daily_cases_eng$week <- week(daily_cases_eng$date)
 
 # sum by week - divide by population * 100,000 to get cases per 100000 for each week
 #ONS population of england: https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates#:~:text=The%20UK%20population%20was%20estimated,the%20year%20to%20mid%2D2018.
-eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=(sum(cases)/66796800)*100000)
+eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/66796800)*100000,2))
 
 #as we are on week 32 - remove last 4 weeks for now and first 4 weeks
 eng_cases_per_100000 <- eng_cases_per_100000[-c(33:36),]
@@ -138,6 +138,7 @@ eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
 eng_cases_per_100000_wide <- eng_cases_per_100000 %>% pivot_wider(c(week), names_from=week, values_from=week_cases_per_100000)
 eng_cases_per_100000_wide <- eng_cases_per_100000_wide %>% mutate(LAD19CD='England',.before=`5`) %>% mutate(Name='England',.before=`5`)
 
+#print(eng_cases_per_100000_wide)
 #add row to covid raw
 covid_raw = covid_raw %>% add_row(eng_cases_per_100000_wide)
 

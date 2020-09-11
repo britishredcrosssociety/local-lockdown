@@ -218,14 +218,15 @@ server <- function(input, output) {
                        popup = ~popup,
                        #icon=hospital_icon
                        icon = list(iconUrl = 'www/hospital-red.png', iconSize=c(20,20))
-                      ) #%>%
+                      ) %>%
             
             # Add carpark markers to firs displayed map?
-            #addMarkers(data = markers_car,
-            #           popup = ~popup,
+            addMarkers(data = markers_car,
+                       popup = ~popup,
+                       clusterOptions = markerClusterOptions(),
                        #icon=hospital_icon
-            #           icon = list(iconUrl = 'www/parking.png', iconSize=c(20,20))
-            #)
+                       icon = list(iconUrl = 'www/parking.png', iconSize=c(20,20))
+            )
     })
     
     
@@ -249,13 +250,13 @@ server <- function(input, output) {
     })
     
     #IE not 100% sure this is working - when you change LAD the parking spaces from previously selected remain
-    filteredCarPark <- reactive({
-        # get code from selected LAD name
-        lad_code = lad %>% filter(lad19nm == input$lad)
-        
-        markers_car %>% 
-            filter(LAD19CD == lad_code$lad19cd)
-    })
+    # filteredCarPark <- reactive({
+    #     # get code from selected LAD name
+    #     lad_code = lad %>% filter(lad19nm == input$lad)
+    #     
+    #     markers_car %>% 
+    #         filter(LAD19CD == lad_code$lad19cd)
+    # })
     
     pal <- colorFactor("viridis", c(1:10), reverse = TRUE)
     
@@ -274,9 +275,9 @@ server <- function(input, output) {
                                        "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>")) %>% 
             
             # Add car park markers
-            addMarkers(data = filteredCarPark(),
-                              icon = list(iconUrl='www/parking.png',iconSize=c(20,20)),
-                              popup = ~popup) %>%
+            # addMarkers(data = filteredCarPark(),
+            #                   icon = list(iconUrl='www/parking.png',iconSize=c(20,20)),
+            #                   popup = ~popup) %>%
         
             # addPolygons(fill = FALSE, color = "grey20", weight = 1) %>%  # Local Authority boundaries (don't really need them actually)
             

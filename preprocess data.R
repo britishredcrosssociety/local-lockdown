@@ -7,6 +7,7 @@ library(readxl)
 library(nomisr)
 library(httr)
 library(sf)
+library(jsonlite)
 
 # Local Authority Districts Names and Codes in the United Kingdom
 lads = read_csv("https://opendata.arcgis.com/datasets/35de30c6778b463a8305939216656132_0.csv")
@@ -24,8 +25,8 @@ vi %>%
 
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
-# This URL corresponds to 4 September 2020 (week 36):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/914814/Weekly_COVID19_report_data_w36.xlsx",
+# This URL corresponds to 11 September 2020 (week 37):
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/916998/Weekly_COVID19_report_data_w37.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 11. All weeks rates UTLA", skip = 7)
@@ -36,24 +37,116 @@ covid = covid %>%
   filter(str_sub(LAD19CD, 1, 1) == "E") %>% 
   mutate(across(starts_with("week"), as.numeric))
 
+
 # Hackney and City of London boroughs are counted as one. Split into separate rows, using the same data for each
 covid = bind_rows(covid %>% filter(LAD19CD != "E09000012/E09000001"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000012"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000001"))
 
+
 # Calculate average rate for past three weeks, plus get latest rate
 covid_sum = covid %>% 
   rowwise() %>% 
   mutate(`Mean infection rate over last 3 weeks` = mean(c_across((ncol(covid) - 2):ncol(covid)), na.rm = TRUE)) %>% 
-  select(LAD19CD, `Latest infection rate` = ncol(covid), `Mean infection rate over last 3 weeks`)
+  mutate(`SD infection rate over last 3 weeks` = sd(c_across((ncol(covid) - 2):ncol(covid)), na.rm = TRUE)) %>% 
+  mutate(`upper`=`Mean infection rate over last 3 weeks` + `SD infection rate over last 3 weeks`) %>%
+  mutate(`lower`=`Mean infection rate over last 3 weeks` - `SD infection rate over last 3 weeks`) %>%
+  select(LAD19CD, `Latest infection rate` = ncol(covid), `Mean infection rate over last 3 weeks`, `upper`, `lower`)
+
+#print(covid_sum)
+
+covid_raw = lads %>% 
+  select(LAD19CD, Name = LAD19NM) %>% 
+  left_join(covid, by = "LAD19CD")
+
+#renaming so will match with england avg.
+covid_raw <- rename_with(covid_raw, ~ gsub("week 0", "", .x, fixed = TRUE))
+covid_raw <- rename_with(covid_raw, ~ gsub("week ", "", .x, fixed = TRUE))
+
 
 unlink(tf); rm(tf)
 
+# ----- England cases per 100,000 per week ------
+# https://coronavirus.data.gov.uk/
+# API guide
+# https://coronavirus.data.gov.uk/developers-guide 
+AREA_TYPE = "nation"
+AREA_NAME = "england"
+
+endpoint <- "https://api.coronavirus.data.gov.uk/v1/data"
+
+# Create filters:
+filters <- c(
+  sprintf("areaType=%s", AREA_TYPE),
+  sprintf("areaName=%s", AREA_NAME)
+)
+
+# Create the structure as a list or a list of lists:
+structure <- list(
+  date  = "date", 
+  name  = "areaName", 
+  code  = "areaCode", 
+  cases = list(
+    daily = "newCasesByPublishDate")
+)
+
+# The "httr::GET" method automatically encodes 
+# the URL and its parameters:
+httr::GET(
+  # Concatenate the filters vector using a semicolon.
+  url = endpoint,
+  
+  # Convert the structure to JSON (ensure 
+  # that "auto_unbox" is set to TRUE).
+  query = list(
+    filters   = paste(filters, collapse = ";"),
+    structure = jsonlite::toJSON(structure, auto_unbox = TRUE)
+  ),
+  
+  # The API server will automatically reject any
+  # requests that take longer than 10 seconds to 
+  # process.
+  timeout(10)
+) -> response
+
+# Handle errors:
+if (response$status_code >= 400) {
+  err_msg = httr::http_status(response)
+  stop(err_msg)
+}
+
+# Convert response from binary to JSON:
+json_text <- content(response, "text")
+daily_cases_eng <- jsonlite::fromJSON(json_text)
+daily_cases_eng <- daily_cases_eng$data
+
+
+# for this example remove first four rows to make the weeks correct
+daily_cases_eng <- daily_cases_eng[-c(1:4),]
+daily_cases_eng$week <- week(daily_cases_eng$date)
+
+# sum by week - divide by population * 100,000 to get cases per 100000 for each week
+#ONS population of england: https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates#:~:text=The%20UK%20population%20was%20estimated,the%20year%20to%20mid%2D2018.
+eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/66796800)*100000,2))
+
+# Match weeks to covid_raw
+eng_cases_per_100000 <- eng_cases_per_100000[-37,]
+eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
+
+#to merge with covid raw 
+eng_cases_per_100000_wide <- eng_cases_per_100000 %>% pivot_wider(c(week), names_from=week, values_from=week_cases_per_100000)
+eng_cases_per_100000_wide <- eng_cases_per_100000_wide %>% mutate(LAD19CD='England',.before=`5`) %>% mutate(Name='England',.before=`5`)
+
+#print(eng_cases_per_100000_wide)
+#add row to covid raw
+covid_raw = covid_raw %>% add_row(eng_cases_per_100000_wide)
+
+#write to file
+write_csv(covid_raw, 'data/all_covid_infection_rate_data.csv')
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-# This URL corresponds to data extracted from 27 August 2020:
-shielded = read_csv("https://files.digital.nhs.uk/44/1D4817/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-08-27.csv")
+shielded = read_csv("https://files.digital.nhs.uk/BC/85E39A/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-09-09.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)
@@ -99,7 +192,8 @@ aps = aps_raw %>%
 
 
 # ---- Asylum ----
-# download the latest stats on Section 95 support by local authorit - https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
+# download the latest stats on Section 95 support by local authority - https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
+# https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
 #  This URL corresponds to data from June 2020:
 GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910573/section-95-support-local-authority-datasets-jun-2020.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))

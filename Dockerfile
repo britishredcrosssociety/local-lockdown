@@ -27,6 +27,11 @@ RUN apt-get update \
         sf \
         leaflet \
         scales \
+        shinydashboard \
+        shinyWidgets \
+        echarts4r \
+        sever \
+        waiter \
 
     # Needed for installGithub.r
     && install2.r --error remotes \

@@ -4,8 +4,6 @@ body, label, input, button, select {
 }
 h1, h2, h3, h4 { font-weight: 400; }
 
-#controls {
-  /* Appearance */
-  background-color: white;
-  padding: 5px 20px 10px 20px;
+#sidebarItemExpanded {
+  padding: 0 10px 10px 10px;
 }

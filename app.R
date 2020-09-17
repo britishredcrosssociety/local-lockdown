@@ -13,6 +13,9 @@ library(shinydashboard)
 library(shinyWidgets)
 #for plots 
 library('echarts4r')
+# Custom error messages and loading screens
+library(sever)
+library(waiter)
 
 # ---- Load data ----
 source("functions.R")
@@ -89,6 +92,15 @@ covid_inf <- read_csv("data/all_covid_infection_rate_data.csv")
 
 #https://community.rstudio.com/t/big-box-beside-4-small-boxes-using-shinydashboard/39489
 body_colwise <- dashboardBody(
+    
+    # - Error and waiting functions to improve UX -
+    use_sever(),
+    use_waiter(),
+    waiter_show_on_load(html = tagList(
+        spin_5(),
+        div(p("Finding track and trace locations"), style = "padding-top:25px;")
+    )),
+    
     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
     tags$head(includeCSS("styles.css")),
     tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
@@ -143,9 +155,11 @@ body_colwise <- dashboardBody(
     ))
 
 ui <- dashboardPage(
+    
+    title = "Local Lockdown",
     skin = "red",
-    dashboardHeader(title = "Local Lockdown", titleWidth = '300px'),
-    dashboardSidebar(width='300px',
+    header = dashboardHeader(title = "Local Lockdown", titleWidth = '300px'),
+    sidebar = dashboardSidebar(width='300px',
                      #insert dropdown menu and text here
                      #p(" "),
                      #p(" "),
@@ -881,6 +895,12 @@ server <- function(input, output) {
         }
         
     })
+    
+    # - Error messages -
+    sever()
+    
+    # - Waiter -
+    waiter_hide()
     
 }
 

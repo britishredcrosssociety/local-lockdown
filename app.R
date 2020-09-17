@@ -205,8 +205,8 @@ ui <- dashboardPage(
     br(),
     br(),
     br(),
-    
-    div(p("Developed by"), img(src = "brc-logo.jpg", width = 225), style="text-align: center;")
+
+    div(p("Developed by"), img(src = "brc-logo.jpg", width = 225), style = "text-align: center;")
   ),
   body_colwise
 )

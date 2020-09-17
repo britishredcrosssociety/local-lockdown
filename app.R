@@ -12,7 +12,7 @@ library(scales)
 library(shinydashboard)
 library(shinyWidgets)
 # for plots
-library("echarts4r")
+library(echarts4r)
 # Custom error messages and loading screens
 library(sever)
 library(waiter)

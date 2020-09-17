@@ -23,7 +23,6 @@ vi %>%
   left_join(msoa_lad, by = c("Code" = "MSOA11CD")) %>% 
   write_sf("data/vulnerability.geojson")
 
-
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
 # This URL corresponds to 11 September 2020 (week 37):
@@ -214,7 +213,6 @@ asylum = asylum %>%
   mutate(`People receiving Section 95 support` = `Dispersed Accommodation` + `Subsistence Only`)
 
 unlink(tf); rm(tf)
-
 
 # ---- Deprivation ----
 ## Load LA-level deprivation scores

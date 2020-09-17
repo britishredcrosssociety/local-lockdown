@@ -15,7 +15,6 @@ RUN apt-get update \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
-
     # I'd rather this was automated, but that's a limitation of R
     && install2.r --error \
         --skipinstalled \
@@ -27,10 +26,8 @@ RUN apt-get update \
         sf \
         leaflet \
         scales \
-
     # Needed for installGithub.r
     && install2.r --error remotes \
-
     # Tidyr v1.1.1 has a cpp11 error - https://stackoverflow.com/questions/63348135/error-installing-tidyr-on-ubuntu-18-04-r-4-0-2
     && installGithub.r \
         --deps TRUE \

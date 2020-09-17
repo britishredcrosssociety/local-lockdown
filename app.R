@@ -177,7 +177,6 @@ body_colwise <- dashboardBody(
 )
 
 ui <- dashboardPage(
-  title = "Local Lockdown",
   skin = "red",
   header = dashboardHeader(title = "Local Lockdown", titleWidth = "300px"),
   sidebar = dashboardSidebar(
@@ -186,7 +185,11 @@ ui <- dashboardPage(
     # p(" "),
     # p(" "),
     br(),
-    p("This tool helps you find hospitals to use for Covid-19 testing sites. Use the drop-down box below to select a Local Authority in England. The filled regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). Markers show hospitals in or near highly vulnerable areas."),
+    p("This tool helps you find hospitals to use for Covid-19 testing sites. 
+      Use the drop-down box below to select a Local Authority in England. 
+      The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
+      Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
+      a cluster to narrow in on the parking lots."),
     br(),
     selectInput("lad",
       label = "Choose a Local Authority",
@@ -202,8 +205,8 @@ ui <- dashboardPage(
     br(),
     br(),
     br(),
-
-    p("Developed by"), img(src = "brc-logo.jpg", width = 225)
+    
+    div(p("Developed by"), img(src = "brc-logo.jpg", width = 225), style="text-align: center;")
   ),
   body_colwise
 )

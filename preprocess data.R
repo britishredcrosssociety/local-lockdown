@@ -194,7 +194,7 @@ aps = aps_raw %>%
 # ---- Asylum ----
 # download the latest stats on Section 95 support by local authority - https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
 # https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
-#  This URL corresponds to data from June 2020:
+# This URL corresponds to data from June 2020:
 GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910573/section-95-support-local-authority-datasets-jun-2020.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
@@ -234,14 +234,52 @@ imd = imd %>%
 
 unlink(tf_imd); rm(tf_imd)
 
+# ---- Furlough ----
+# https://www.gov.uk/government/statistics/coronavirus-job-retention-scheme-statistics-september-2020
+# This URL corresponds to data from Sept 2020:
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910962/CJRS_Statistics_August_2020_tables.xlsx",
+    write_disk(tf <- tempfile(fileext = ".xlsx")))
+
+furlough_raw <- read_excel(tf,
+                          sheet = "5. Local Authority",
+                          skip = 5)
+
+# Keep only data
+furlough <-
+  furlough_raw %>% 
+  filter(rowMeans(is.na(.)) < 1) %>% 
+  slice(-422:-432)
+
+# Rename cols
+furlough <-
+  furlough %>% 
+  select(LAD19CD = `County and district / unitary authority Codes`,
+         LAD19NM = `County and district / unitary authority`,
+         "Furlough count" = `Employments furloughed`,
+         "Furlough rate" = `Take-up rate`)
+
+# Keep only LA codes and separate rows with duplicate LA codes and write to disk
+furlough <-
+  furlough %>% 
+  filter(!str_detect(LAD19CD, "^E9") &
+           !str_detect(LAD19CD, "^E1") &
+           !str_detect(LAD19CD, "^W9") &
+           !str_detect(LAD19CD, "^S9") &
+           !str_detect(LAD19CD, "^N9")) %>% 
+  separate_rows(LAD19CD, sep = ", ")
+
+
+
 
 # ---- Merge and save ----
-la_data = lads %>% 
+la_data <-
+  lads %>% 
   select(LAD19CD, Name = LAD19NM) %>% 
   left_join(covid_sum, by = "LAD19CD") %>% 
   left_join(shielded, by = "LAD19CD") %>% 
   left_join(imd, by = "LAD19CD") %>% 
   left_join(aps, by = "LAD19CD") %>% 
-  left_join(asylum, by = "LAD19CD")
+  left_join(asylum, by = "LAD19CD") %>% 
+  left_join(furlough, by = "LAD19CD")
 
 write_csv(la_data, "data/local authority stats.csv")

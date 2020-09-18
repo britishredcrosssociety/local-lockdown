@@ -735,7 +735,7 @@ server <- function(input, output) {
         e_x_axis(axisLabel = list(interval = 0), name = "Week", nameLocation = "middle", nameGap = 25) %>%
         e_y_axis(axisLabel = list(interval = 0), name = label, nameLocation = "middle", nameGap = 25) %>%
         e_mark_point(area, data = list(xAxis = x_point$stat, yAxis = y_point$value, value = y_point$value)) %>%
-        e_tooltip()
+        e_tooltip(trigger = "axis")
     }
 
     else {
@@ -764,7 +764,7 @@ server <- function(input, output) {
         # e_line(to_plot, name=area, symbolSize=8) %>%
         e_x_axis(show = F) %>%
         e_y_axis(show = F) %>%
-        e_tooltip() %>%
+        e_tooltip(trigger = "axis") %>%
         e_title(title, subtext)
     }
   })

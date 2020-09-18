@@ -268,8 +268,30 @@ furlough <-
            !str_detect(LAD19CD, "^N9")) %>% 
   separate_rows(LAD19CD, sep = ", ")
 
+# ---- Homeless ----
+# Load VI with homelessness rate
+vi_msoa <- read_csv("https://raw.githubusercontent.com/britishredcrosssociety/covid-19-vulnerability/master/output/vulnerability-MSOA-England.csv")
 
+# Load lookup table
+lookup <- read_csv("https://raw.githubusercontent.com/britishredcrosssociety/covid-19-vulnerability/master/data/lookup%20mosa11%20to%20lad17%20to%20lad19%20to%20tactical%20cell.csv") %>% 
+  select(MSOA11CD, LAD19CD)
 
+# Extract variables from vi
+homeless_msoa <-
+  vi_msoa %>% 
+  select(MSOA11CD = Code,
+         Homelessness)
+
+# Join lookup
+homeless_msoa <-
+  homeless_msoa %>% 
+  left_join(lookup, by = "MSOA11CD")
+
+# Aggregate to LA
+homesless <- 
+  homeless_msoa %>% 
+  group_by(LAD19CD) %>% 
+  summarise(Homelessness = mean(Homelessness))
 
 # ---- Merge and save ----
 la_data <-
@@ -280,6 +302,7 @@ la_data <-
   left_join(imd, by = "LAD19CD") %>% 
   left_join(aps, by = "LAD19CD") %>% 
   left_join(asylum, by = "LAD19CD") %>% 
-  left_join(furlough, by = "LAD19CD")
+  left_join(furlough, by = "LAD19CD") %>% 
+  left_join(home)
 
 write_csv(la_data, "data/local authority stats.csv")

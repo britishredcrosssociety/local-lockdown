@@ -288,7 +288,7 @@ homeless_msoa <-
   left_join(lookup, by = "MSOA11CD")
 
 # Aggregate to LA
-homesless <- 
+homeless <- 
   homeless_msoa %>% 
   group_by(LAD19CD) %>% 
   summarise(Homelessness = mean(Homelessness))
@@ -303,6 +303,6 @@ la_data <-
   left_join(aps, by = "LAD19CD") %>% 
   left_join(asylum, by = "LAD19CD") %>% 
   left_join(furlough, by = "LAD19CD") %>% 
-  left_join(home)
+  left_join(homeless, by = "LAD19CD")
 
 write_csv(la_data, "data/local authority stats.csv")

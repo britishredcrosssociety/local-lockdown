@@ -125,7 +125,7 @@ body_colwise <- dashboardBody(
           width = 8,
           box(
             width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-            title = "Infection Rate (Covid-19 cases per 100,000 people tested)",
+            title = "COVID-19 Infection Rate (per 100,000 people)",
             # Plot
             echarts4rOutput("latest_inf", height = "210px")
           )
@@ -185,7 +185,7 @@ ui <- dashboardPage(
     # p(" "),
     # p(" "),
     br(),
-    p("This tool helps you find hospitals to use for Covid-19 testing sites. 
+    p("This tool helps you find hospitals to use for COVID-19 testing sites. 
       Use the drop-down box below to select a Local Authority in England. 
       The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
@@ -758,8 +758,8 @@ server <- function(input, output) {
       area <- paste0("Infection rate for: ", input$lad)
 
       # create title
-      title <- paste0("Data Unavailable")
-      subtext <- paste0("LAD: ", input$lad)
+      title <- paste0("Unfortunately, infection rate data is unavailable for ", input$lad)
+      subtext <- paste0("Please select another local authority")
 
       # plot
       scatter <- inf_rate %>%
@@ -767,7 +767,6 @@ server <- function(input, output) {
         # e_line(to_plot, name=area, symbolSize=8) %>%
         e_x_axis(show = F) %>%
         e_y_axis(show = F) %>%
-        e_tooltip(trigger = "axis") %>%
         e_title(title, subtext)
     }
   })

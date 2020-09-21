@@ -238,7 +238,15 @@ unlink(tf_imd); rm(tf_imd)
 wimd = read_csv("https://github.com/matthewgthomas/IMD/raw/master/data/Welsh%20IMD%20-%20Local%20Authorities.csv") %>% 
   select(LAD19CD, Extent)
 
-imd = bind_rows(imd, wimd)
+# Scottish IMD
+simd = read_csv("https://github.com/matthewgthomas/IMD/raw/master/data/Scottish%20IMD%20-%20Local%20Authorities.csv") %>% 
+  select(LAD19CD, Extent)
+
+# Welsh IMD
+ni_imd = read_csv("https://github.com/matthewgthomas/IMD/raw/master/data/NI%20IMD%20-%20Local%20Authorities.csv") %>% 
+  select(LAD19CD, Extent)
+
+imd = bind_rows(imd, wimd, simd, ni_imd)
 
 
 # ---- Furlough ----

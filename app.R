@@ -111,26 +111,55 @@ body_colwise <- dashboardBody(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   tags$head(includeCSS("styles.css")),
   tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
+  
+  # - Row one -
   fluidRow(
-    box(
-      width = 12, height = "450px", solidHeader = TRUE, status = "danger",
-      title = "Neighbourhood Vulnerability",
-      leafletOutput("map", height = "395px")
+    column(
+      width = 12,
+      column(
+        width = 6,
+        box(
+          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+          title = "Neighbourhood Vulnerability",
+          leafletOutput("map", height = "395px")
+        )
+      ),
+      
+      column(
+        width = 6,
+        box(
+          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+          title = "COVID-19 Infection Rate (per 100,000 people)",
+          # Plot
+          echarts4rOutput("latest_inf", height = "395px")
+        )
+      )
     ),
 
+    # - Row two -
     fluidRow( # title='demographic data',
       column(
         width = 12,
         column(
-          width = 8,
+          width = 4,
           box(
             width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-            title = "COVID-19 Infection Rate (per 100,000 people)",
+            title = "Furlough rate",
             # Plot
-            echarts4rOutput("latest_inf", height = "210px")
+            echarts4rOutput("furlough", height = "230px")
           )
         ),
-
+        
+        column(
+          width = 4,
+          box(
+            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+            title = "Homeless rate",
+            # Plot
+            echarts4rOutput("homelessness", height = "230px")
+          )
+        ),
+        
         column(
           width = 4,
           box(
@@ -140,7 +169,7 @@ body_colwise <- dashboardBody(
           )
         ),
 
-
+        # - Row three -
         fluidRow(
           column(
             width = 12,
@@ -900,7 +929,7 @@ server <- function(input, output) {
     }
   })
 
-  # No. of people recieving section 95 report
+  # No. of people receiving section 95 report
   output$sec_95 <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
@@ -960,6 +989,131 @@ server <- function(input, output) {
         e_tooltip() %>%
         e_title(title, subtext)
     }
+  })
+  
+  # - Furlough -
+  output$furlough <- renderEcharts4r({
+    
+    # filter for just one of interest
+    curr_stats <- la_data %>% filter(Name == input$lad)
+    
+    if(!is.na(curr_stats$`Furlough count`)){
+      
+      # Calculate mean rate
+      mean_fulough <-
+        la_data %>%
+        summarise(f_count = mean(`Furlough count`, na.rm = TRUE))
+      
+      # format axis label
+      label <- paste("Employments", "furloughed", sep = "\n")
+      
+      # Create dataframe
+      lad_furlough <- curr_stats %>%
+        select("Name", `Furlough count`) %>%
+        mutate(avg_eng = round(mean_fulough$f_count, 0)) %>%
+        mutate(label = label)
+      
+      # lad specific label
+      aoi <- paste0("LAD: ", input$lad)
+      
+      # Plot
+      lad_furlough %>% 
+        e_charts(x = label) %>%
+        e_bar(`Furlough count`, name = aoi) %>%
+        e_scatter(avg_eng, name = "England avg", symbolSize = 12) %>%
+        e_grid(containLabel = TRUE) %>%
+        e_flip_coords() %>%
+        e_x_axis(axisLabel = list(interval = 0, rotate = 45), name = "No. of people", nameLocation = "middle", nameGap = 40) %>%
+        e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+        e_tooltip()
+      
+    }
+    
+    else {
+      # lad with no furlough data
+      lad_furlough <- curr_stats %>% select("Name", `Furlough count`)
+      
+      # convert NAs to 0 with case when not going to plot anything
+      lad_furlough <- lad_furlough %>% mutate(to_plot = case_when(
+        is.na(`Furlough count`) ~ 0,
+      ))
+      
+      # create title
+      title <- paste0("Data Unavailable")
+      subtext <- paste0("LAD: ", input$lad)
+      
+      # echart4R
+      pop_plot <- lad_furlough %>%
+        e_charts(x = Name) %>%
+        e_bar(to_plot, legend = F) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_tooltip() %>%
+        e_title(title, subtext)
+    }
+  })
+  
+  # - Homeless -
+  output$homelessness <- renderEcharts4r({
+    
+    # filter for just one of interest
+    curr_stats <- la_data %>% filter(Name == input$lad)
+    
+    if(!is.na(curr_stats$Homelessness)){
+      
+      # Calculate mean rate
+      mean_homelessness <-
+        la_data %>%
+        summarise(h_count = mean(Homelessness, na.rm = TRUE))
+      
+      # format axis label
+      label <- paste("Homelessness", "rate per", "1000", sep = "\n")
+      
+      # Create dataframe
+      lad_homelessness <- curr_stats %>%
+        select("Name", Homelessness) %>%
+        mutate(avg_eng = round(mean_homelessness$h_count, 0)) %>%
+        mutate(label = label)
+      
+      # lad specific label
+      aoi <- paste0("LAD: ", input$lad)
+      
+      # Plot
+      lad_homelessness %>%
+        e_charts(x = label) %>%
+        e_bar(Homelessness, name = aoi) %>%
+        e_scatter(avg_eng, name = "England avg", symbolSize = 12) %>%
+        e_grid(containLabel = TRUE) %>%
+        e_flip_coords() %>%
+        e_x_axis(axisLabel = list(interval = 0, rotate = 45), name = "Rate per 1,000", nameLocation = "middle", nameGap = 25) %>%
+        e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+        e_tooltip()
+      
+    }
+    
+    else {
+      # lad with no homelessness data
+      lad_homelessness <- curr_stats %>% select("Name", Homelessness)
+      
+      # convert NAs to 0 with case when not going to plot anything
+      lad_homelessness <- lad_homelessness %>% mutate(to_plot = case_when(
+        is.na(Homelessness) ~ 0,
+      ))
+      
+      # create title
+      title <- paste0("Data Unavailable")
+      subtext <- paste0("LAD: ", input$lad)
+      
+      # echart4R
+      pop_plot <- lad_homelessness %>%
+        e_charts(x = Name) %>%
+        e_bar(to_plot, legend = F) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_tooltip() %>%
+        e_title(title, subtext)
+    }
+    
   })
 
   # - Error messages -

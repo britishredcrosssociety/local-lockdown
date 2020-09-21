@@ -721,7 +721,7 @@ server <- function(input, output) {
 
 
       # LAD specific legend
-      area <- paste0("Infection rate for: ", input$lad)
+      area <- paste0(input$lad)
 
       # format xasix label
       label <- paste("Cases per", "100,000", sep = "\n")
@@ -731,10 +731,12 @@ server <- function(input, output) {
       scatter <- inf_rate %>%
         e_charts(x = stat) %>%
         e_line(value, name = area, symbolSize = 8) %>%
-        e_line(eng_cases, name = "Eng cases per 100,000", symbolSize = 8) %>%
+        e_line(eng_cases, name = "England average", symbolSize = 8) %>%
         e_x_axis(axisLabel = list(interval = 0), name = "Week", nameLocation = "middle", nameGap = 25) %>%
         e_y_axis(axisLabel = list(interval = 0), name = label, nameLocation = "middle", nameGap = 25) %>%
-        e_mark_point(area, data = list(xAxis = x_point$stat, yAxis = y_point$value, value = y_point$value)) %>%
+        e_mark_point(area,
+                     data = list(xAxis = x_point$stat, yAxis = y_point$value, value = y_point$value),
+                     label = list(fontSize = 8)) %>%
         e_tooltip(trigger = "axis")
     }
 

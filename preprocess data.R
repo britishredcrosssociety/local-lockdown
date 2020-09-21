@@ -25,11 +25,11 @@ vi %>%
 
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
-# This URL corresponds to 11 September 2020 (week 37):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/916998/Weekly_COVID19_report_data_w37.xlsx",
+# This URL corresponds to 18 September 2020 (week 38):
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/919094/Weekly_COVID19_report_data_w38.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
-covid = read_excel(tf, sheet = "Figure 11. All weeks rates UTLA", skip = 7)
+covid = read_excel(tf, sheet = "Figure 12. All weeks rates UTLA", skip = 7)
 
 # Clean the data
 covid = covid %>% 
@@ -230,9 +230,16 @@ GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/
 imd = read_excel(tf_imd, sheet = "IMD") 
 
 imd = imd %>% 
-  select(LAD19CD = `Local Authority District code (2019)`, `IMD 2019 - Extent`)
+  select(LAD19CD = `Local Authority District code (2019)`, Extent = `IMD 2019 - Extent`)
 
 unlink(tf_imd); rm(tf_imd)
+
+# Welsh IMD
+wimd = read_csv("https://github.com/matthewgthomas/IMD/raw/master/data/Welsh%20IMD%20-%20Local%20Authorities.csv") %>% 
+  select(LAD19CD, Extent)
+
+imd = bind_rows(imd, wimd)
+
 
 # ---- Furlough ----
 # https://www.gov.uk/government/statistics/coronavirus-job-retention-scheme-statistics-september-2020

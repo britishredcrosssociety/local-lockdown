@@ -51,11 +51,11 @@ markers_car <- read_sf("data/carparks-vulnerability.shp") %>%
   ))
 
 lad <- lad %>%
-  filter(str_sub(lad19cd, 1, 1) == "E") %>% # only use England's LAs for now, because that's where we have hospital data for
+  # filter(str_sub(lad19cd, 1, 1) == "E") %>% # only use England's LAs for now, because that's where we have hospital data for
   st_transform(crs = 4326) # could do this in preprocessing to speed up load times
 
-la_data <- la_data %>% filter(str_sub(LAD19CD, 1, 1) == "E")
-vi <- vi %>% filter(str_sub(LAD19CD, 1, 1) == "E")
+# la_data <- la_data %>% filter(str_sub(LAD19CD, 1, 1) == "E")
+# vi <- vi %>% filter(str_sub(LAD19CD, 1, 1) == "E")
 
 # total lad's in England 382, total without inf rate 260 (this varies based on the week), 150 with data at some point in covid_sum
 
@@ -153,10 +153,9 @@ body_colwise <- dashboardBody(
         column(
           width = 4,
           box(
-            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-            title = "Homeless rate",
-            # Plot
-            echarts4rOutput("homelessness", height = "230px")
+            width = NULL, solidHeader = TRUE, status = "danger",
+            title = "Population living in highly deprived areas", height = "250px", align = "center",
+            echarts4rOutput("IMD", height = "230px")
           )
         ),
         
@@ -181,12 +180,14 @@ body_colwise <- dashboardBody(
                 echarts4rOutput("cl_vunl", height = "230px")
               )
             ),
+            
             column(
               width = 4,
               box(
-                width = NULL, solidHeader = TRUE, status = "danger",
-                title = "Population living in highly deprived areas", height = "250px", align = "center",
-                echarts4rOutput("IMD", height = "230px")
+                width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+                title = "Homeless rate",
+                # Plot
+                echarts4rOutput("homelessness", height = "230px")
               )
             ),
 
@@ -215,7 +216,7 @@ ui <- dashboardPage(
     # p(" "),
     br(),
     p("This tool helps you find hospitals to use for COVID-19 testing sites. 
-      Use the drop-down box below to select a Local Authority in England. 
+      Use the drop-down box below to select a Local Authority. 
       The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
       a cluster to narrow in on the parking lots."),
@@ -534,7 +535,7 @@ server <- function(input, output) {
       BAME_stats <- tbame_stats %>%
         e_charts(x = population) %>%
         e_bar(proportion, name = aoi) %>%
-        e_scatter(eng_avg, name = "England avg", symbolSize = 8) %>%
+        e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
         e_grid(containLabel = TRUE) %>%
         e_flip_coords() %>%
         e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
@@ -607,7 +608,7 @@ server <- function(input, output) {
           pop_plot <- tbame_stats %>%
             e_charts(x = population) %>%
             e_bar(to_plot, name = aoi) %>%
-            e_scatter(eng_avg, name = "England avg", symbolSize = 8) %>%
+            e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
             e_grid(containLabel = TRUE) %>%
             e_flip_coords() %>%
             e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
@@ -648,7 +649,7 @@ server <- function(input, output) {
           pop_plot <- tbame_stats %>%
             e_charts(x = population) %>%
             e_bar(to_plot, name = aoi) %>%
-            e_scatter(eng_avg, name = "England avg", symbolSize = 8) %>%
+            e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
             e_grid(containLabel = TRUE) %>%
             e_flip_coords() %>%
             e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
@@ -788,7 +789,7 @@ server <- function(input, output) {
 
       # create title
       title <- paste0("Unfortunately, infection rate data is unavailable for ", input$lad)
-      subtext <- paste0("Please select another local authority")
+      # subtext <- paste0("Please select another local authority")
 
       # plot
       scatter <- inf_rate %>%
@@ -796,7 +797,7 @@ server <- function(input, output) {
         # e_line(to_plot, name=area, symbolSize=8) %>%
         e_x_axis(show = F) %>%
         e_y_axis(show = F) %>%
-        e_title(title, subtext)
+        e_title(title) # , subtext)
     }
   })
 
@@ -868,24 +869,24 @@ server <- function(input, output) {
   output$IMD <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
-    if (!is.na(curr_stats$`IMD 2019 - Extent`)) {
+    if (!is.na(curr_stats$Extent)) {
 
       # filter na's from la_data
       IMD_vuln <- la_data %>%
-        select("Name", "IMD 2019 - Extent") %>%
-        drop_na("IMD 2019 - Extent")
+        select("Name", "Extent") %>%
+        drop_na("Extent")
 
       # calculate average
-      mean_IMD_vuln <- IMD_vuln %>% summarise(avg_eng_IMD = mean(`IMD 2019 - Extent`))
+      mean_IMD_vuln <- IMD_vuln %>% summarise(avg_eng_IMD = mean(Extent))
 
       # format axis label
       label <- paste("Population", "living in highly", "deprived area", sep = "\n")
 
       # Extract just columns for LAD of interest and append England average
       lad_IMD_vuln <- curr_stats %>%
-        select("Name", "IMD 2019 - Extent") %>%
+        select("Name", "Extent") %>%
         mutate(avg_eng = round(mean_IMD_vuln$avg_eng_IMD * 100, 1)) %>%
-        mutate(`Population living in highly deprived areas (%)` = round(`IMD 2019 - Extent` * 100, 1)) %>%
+        mutate(`Population living in highly deprived areas (%)` = round(Extent * 100, 1)) %>%
         mutate(label = label)
 
       # lad specific legend
@@ -895,7 +896,7 @@ server <- function(input, output) {
       IMD_prop_bar <- lad_IMD_vuln %>%
         e_charts(x = label) %>%
         e_bar(`Population living in highly deprived areas (%)`, name = aoi) %>%
-        e_scatter(avg_eng, name = "England avg", symbolSize = 12) %>%
+        e_scatter(avg_eng, name = "National avg", symbolSize = 12) %>%
         e_grid(containLabel = TRUE) %>%
         e_flip_coords() %>%
         e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
@@ -907,11 +908,11 @@ server <- function(input, output) {
     else {
 
       # get one with no data
-      lad_IMD_vuln <- curr_stats %>% select("Name", "IMD 2019 - Extent")
+      lad_IMD_vuln <- curr_stats %>% select("Name", "Extent")
 
       # convert NAs to 0 with case when not going to plot anything
       lad_IMD_vuln <- lad_IMD_vuln %>% mutate(to_plot = case_when(
-        is.na(`IMD 2019 - Extent`) ~ 0,
+        is.na(Extent) ~ 0,
       ))
 
       # create title
@@ -959,7 +960,7 @@ server <- function(input, output) {
       sec_95_bar <- lad_sec_95 %>%
         e_charts(x = label) %>%
         e_bar(`People receiving Section 95 support`, name = aoi) %>%
-        e_scatter(avg_eng, name = "England avg", symbolSize = 12) %>%
+        e_scatter(avg_eng, name = "National avg", symbolSize = 12) %>%
         e_grid(containLabel = TRUE) %>%
         e_flip_coords() %>%
         e_x_axis(axisLabel = list(interval = 0, rotate = 45), name = "No. of people", nameLocation = "middle", nameGap = 35) %>%
@@ -1020,7 +1021,7 @@ server <- function(input, output) {
       lad_furlough %>% 
         e_charts(x = label) %>%
         e_bar(`Furlough count`, name = aoi) %>%
-        e_scatter(avg_eng, name = "England avg", symbolSize = 12) %>%
+        e_scatter(avg_eng, name = "National avg", symbolSize = 12) %>%
         e_grid(containLabel = TRUE) %>%
         e_flip_coords() %>%
         e_x_axis(axisLabel = list(interval = 0, rotate = 45), name = "No. of people", nameLocation = "middle", nameGap = 40) %>%

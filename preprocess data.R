@@ -130,7 +130,7 @@ daily_cases_eng$week <- week(daily_cases_eng$date)
 eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/66796800)*100000,2))
 
 # Match weeks to covid_raw
-eng_cases_per_100000 <- eng_cases_per_100000[-37,]
+eng_cases_per_100000 <- eng_cases_per_100000[-c(37:38),]
 eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
 
 #to merge with covid raw 
@@ -194,7 +194,7 @@ aps = aps_raw %>%
 # ---- Asylum ----
 # download the latest stats on Section 95 support by local authority - https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
 # https://www.gov.uk/government/statistical-data-sets/asylum-and-resettlement-datasets
-#  This URL corresponds to data from June 2020:
+# This URL corresponds to data from June 2020:
 GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910573/section-95-support-local-authority-datasets-jun-2020.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
@@ -234,14 +234,75 @@ imd = imd %>%
 
 unlink(tf_imd); rm(tf_imd)
 
+# ---- Furlough ----
+# https://www.gov.uk/government/statistics/coronavirus-job-retention-scheme-statistics-september-2020
+# This URL corresponds to data from Sept 2020:
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910962/CJRS_Statistics_August_2020_tables.xlsx",
+    write_disk(tf <- tempfile(fileext = ".xlsx")))
+
+furlough_raw <- read_excel(tf,
+                          sheet = "5. Local Authority",
+                          skip = 5)
+
+# Keep only data
+furlough <-
+  furlough_raw %>% 
+  filter(rowMeans(is.na(.)) < 1) %>% 
+  slice(-422:-432)
+
+# Rename cols
+furlough <-
+  furlough %>% 
+  select(LAD19CD = `County and district / unitary authority Codes`,
+         LAD19NM = `County and district / unitary authority`,
+         "Furlough count" = `Employments furloughed`,
+         "Furlough rate" = `Take-up rate`)
+
+# Keep only LA codes and separate rows with duplicate LA codes and write to disk
+furlough <-
+  furlough %>% 
+  filter(!str_detect(LAD19CD, "^E9") &
+           !str_detect(LAD19CD, "^E1") &
+           !str_detect(LAD19CD, "^W9") &
+           !str_detect(LAD19CD, "^S9") &
+           !str_detect(LAD19CD, "^N9")) %>% 
+  separate_rows(LAD19CD, sep = ", ")
+
+# ---- Homeless ----
+# Load VI with homelessness rate
+vi_msoa <- read_csv("https://raw.githubusercontent.com/britishredcrosssociety/covid-19-vulnerability/master/output/vulnerability-MSOA-England.csv")
+
+# Load lookup table
+lookup <- read_csv("https://raw.githubusercontent.com/britishredcrosssociety/covid-19-vulnerability/master/data/lookup%20mosa11%20to%20lad17%20to%20lad19%20to%20tactical%20cell.csv") %>% 
+  select(MSOA11CD, LAD19CD)
+
+# Extract variables from vi
+homeless_msoa <-
+  vi_msoa %>% 
+  select(MSOA11CD = Code,
+         Homelessness)
+
+# Join lookup
+homeless_msoa <-
+  homeless_msoa %>% 
+  left_join(lookup, by = "MSOA11CD")
+
+# Aggregate to LA
+homeless <- 
+  homeless_msoa %>% 
+  group_by(LAD19CD) %>% 
+  summarise(Homelessness = mean(Homelessness))
 
 # ---- Merge and save ----
-la_data = lads %>% 
+la_data <-
+  lads %>% 
   select(LAD19CD, Name = LAD19NM) %>% 
   left_join(covid_sum, by = "LAD19CD") %>% 
   left_join(shielded, by = "LAD19CD") %>% 
   left_join(imd, by = "LAD19CD") %>% 
   left_join(aps, by = "LAD19CD") %>% 
-  left_join(asylum, by = "LAD19CD")
+  left_join(asylum, by = "LAD19CD") %>% 
+  left_join(furlough, by = "LAD19CD") %>% 
+  left_join(homeless, by = "LAD19CD")
 
 write_csv(la_data, "data/local authority stats.csv")

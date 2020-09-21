@@ -21,7 +21,7 @@ triggers the server to download that image and run it on the server.
 
 > See [Docker website](https://docs.docker.com/engine/install/) for installation instructions
 
-```shell
+```shell-script
 docker build -t local-lockdown .
 ```
 
@@ -31,7 +31,7 @@ Due to the size of R dependencies, this will take ~15 minutes to build and take 
 
 Once you've built the image, you can use Docker to run it
 
-```shell
+```shell-script
 docker run -it --rm -p 8080:3838 local-lockdown
 ```
 

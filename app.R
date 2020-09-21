@@ -193,7 +193,8 @@ ui <- dashboardPage(
     br(),
     selectInput("lad",
       label = "Choose a Local Authority",
-      choices = sort(la_data$Name)
+      choices = sort(la_data$Name),
+      selected = "Tower Hamlets"
     ),
     br(),
 

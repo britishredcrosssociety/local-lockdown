@@ -5,12 +5,7 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
 ## Overview
-R Shiny dashboard for visualising information related to Covid-19 Test &amp; Trace and local lockdowns
-
-## Contributing
-To contribute to this project, please follow [GitHub Flow](https://guides.github.com/introduction/flow/) when submitting changes.
-
-> Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+R Shiny dashboard for visualising information related to COVID-19 Test &amp; Trace and local lockdowns. Access the dashboard [here](https://vcsep-local-lockdown-app.azurewebsites.net).
 
 ## Deployment
 
@@ -26,7 +21,7 @@ triggers the server to download that image and run it on the server.
 
 > See [Docker website](https://docs.docker.com/engine/install/) for installation instructions
 
-```shell script
+```shell
 docker build -t local-lockdown .
 ```
 
@@ -36,7 +31,7 @@ Due to the size of R dependencies, this will take ~15 minutes to build and take 
 
 Once you've built the image, you can use Docker to run it
 
-```shell script
+```shell
 docker run -it --rm -p 8080:3838 local-lockdown
 ```
 
@@ -49,3 +44,12 @@ view the application.
 - [ ] Automate dependency installation using `requirements.txt` format (or similar)
 - [ ] Establish better fix for error installing [tidyr@1.1.1](https://stackoverflow.com/questions/63348135/error-installing-tidyr-on-ubuntu-18-04-r-4-0-2)
 - [ ] Run Actions on all branches, only publishing on `master`
+
+## Contributing
+To contribute to this project, please follow [GitHub Flow](https://guides.github.com/introduction/flow/) when submitting changes.
+
+> Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+
+## Getting help
+If you encounter a clear bug, please file a minimal reproducible example in [issues](https://github.com/britishredcrosssociety/local-lockdown/issues).
+

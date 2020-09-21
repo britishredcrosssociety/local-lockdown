@@ -130,7 +130,7 @@ daily_cases_eng$week <- week(daily_cases_eng$date)
 eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/66796800)*100000,2))
 
 # Match weeks to covid_raw
-eng_cases_per_100000 <- eng_cases_per_100000[-37,]
+eng_cases_per_100000 <- eng_cases_per_100000[-c(37:38),]
 eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
 
 #to merge with covid raw 

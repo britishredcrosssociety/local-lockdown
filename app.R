@@ -1126,8 +1126,7 @@ server <- function(input, output) {
 }
 
 
-#enableBookmarking(store='url') #saving as url results in a very long url
-enableBookmarking(store='server') 
+enableBookmarking(store='url') # saving as url results in a very long url but necessary in this deployment
 
 # Run app ----
 shinyApp(ui, server)

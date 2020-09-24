@@ -7,6 +7,29 @@
 ## Overview
 R Shiny dashboard for visualising information related to COVID-19 Test &amp; Trace and local lockdowns. Access the dashboard [here](https://vcsep-local-lockdown-app.azurewebsites.net).
 
+## Saving State
+
+> **tl;dr** - treat the application as stateless. Any files written to the disk may not be there in future.
+
+Due in part to how this application is deployed, as a Docker container in [Azure App Service](https://azure.microsoft.com/en-gb/services/app-service/),
+and based on the initial requirements, no dynamic state can be stored in this instance. We are on the dynamic plan, which
+means we cannot guarantee that any state stored to disk will be there on a future run.
+
+As a workflow, Azure App Services work like this:
+
+1. User goes to URL
+2. App checks if server is already running
+    1. If running, serve application
+    2. Else, start application and download latest Docker image
+3. Turn off application if no new requests come in during timeout period
+
+The key here is the timeout period (< 5 mins - not configurable). If a new request comes in during that time, it keeps
+the application running and any statefiles on there. If it's not running, it will be a new instance of the application
+without any of the files written to the disk during any previous instance.
+
+As a future improvement, we can map to blob storage account to the instance where things would be written, but that is
+not currently in-scope.
+
 ## Deployment
 
 [Website](https://vcsep-local-lockdown-app.azurewebsites.net)
@@ -44,6 +67,7 @@ view the application.
 - [ ] Automate dependency installation using `requirements.txt` format (or similar)
 - [ ] Establish better fix for error installing [tidyr@1.1.1](https://stackoverflow.com/questions/63348135/error-installing-tidyr-on-ubuntu-18-04-r-4-0-2)
 - [ ] Run Actions on all branches, only publishing on `master`
+- [ ] Add mapping to store state files in blob storage
 
 ## Contributing
 To contribute to this project, please follow [GitHub Flow](https://guides.github.com/introduction/flow/) when submitting changes.

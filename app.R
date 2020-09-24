@@ -23,18 +23,16 @@ source("functions.R")
 la_data <- read_csv("data/local authority stats.csv")
 lad <- read_sf("data/Local_Authority_Districts__December_2019__Boundaries_UK_BGC.shp")
 vi <- read_sf("data/vulnerability.geojson")
-markers_hosp <- read_sf("data/hospital-markers.shp") %>%
+markers_hosp <- read_sf("data/hospitals-vulnerability.shp") %>%
   replace_na(list(
-    OrgnstN = "",
-    Addrss1 = "",
-    Postcod = "",
-    Website = ""
+    Name = "",
+    Address = "",
+    Postcod = ""
   )) %>%
   mutate(popup = paste0(
-    OrgnstN, "<br/>",
-    Addrss1, "<br/>",
-    Postcod, "<br/>",
-    "<a href='", Website, "'>", Website, "</a>"
+    Name,    "<br/>",
+    Address, "<br/>",
+    Postcod, "<br/>"
   ))
 
 markers_car <- read_sf("data/carparks-vulnerability.shp") %>%

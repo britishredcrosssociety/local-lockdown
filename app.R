@@ -206,9 +206,12 @@ body_colwise <- dashboardBody(
   )
 )
 
-ui <- dashboardPage(
+ui <- function(request) {
+  dashboardPage(
   skin = "red",
-  header = dashboardHeader(title = "Local Lockdown", titleWidth = "300px"),
+  header = dashboardHeader(title = "Local Lockdown", titleWidth = "300px",
+                           #to add in bookmark button
+                           tags$li(class="dropdown", bookmarkButton(), style = "padding-top: 8px; padding-bottom: 8px; padding-right: 15px")),
   sidebar = dashboardSidebar(
     width = "300px",
     # insert dropdown menu and text here
@@ -241,7 +244,7 @@ ui <- dashboardPage(
   ),
   body_colwise
 )
-
+}
 
 # ---- Server ----
 server <- function(input, output) {
@@ -1123,6 +1126,10 @@ server <- function(input, output) {
   # - Waiter -
   waiter_hide()
 }
+
+
+#enableBookmarking(store='url') #saving as url results in a very long url
+enableBookmarking(store='server') 
 
 # Run app ----
 shinyApp(ui, server)

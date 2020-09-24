@@ -56,7 +56,7 @@ unlink(tf); rm(tf)
 
 # load postcode directory and keep only relevant fields - we just need MSOA
 postcodes_raw = read_csv("data/postcodes/Data/ONSPD_FEB_2020_UK.csv")
-postcodes = postcodes_raw %>% dplyr::select(Postcode = pcd, msoa11, oslaua, long, lat)
+postcodes = postcodes_raw %>% dplyr::select(Postcode = pcd, lsoa11, msoa11, oslaua, long, lat)
 
 # the ONS data truncates 7-character postcodes to remove spaces (e.g. CM99 1AB --> CM991AB); get rid of all spaces in both datasets to allow merging
 # Mutate to upper case
@@ -71,6 +71,10 @@ hospitals <- hospitals %>%
 # Look up MSOAs and VI deciles for each hospital
 hospitals_vi = hospitals %>%
   left_join(postcodes, by = "Postcode2") %>%
+  
+  # NI doesn't have MSOAs so copy its LSOAs over
+  mutate(msoa11 = if_else(str_sub(lsoa11, 1, 1) == "9", lsoa11, msoa11)) %>% 
+  
   left_join(vi, by = c("msoa11" = "Code"))
 
 # convert to spatial dataframe and save
@@ -110,7 +114,7 @@ neighbouring_hospitals = tibble(MSOA11CD = character())
 
 for (vuln_msoa in vuln_msoa_no_hospital$Code) {
   # Make a tibble containing the current vulnerable MSOA without a hospital and all MSOAs with hospitals, assigning row numbers to each
-  curr_msoas <- vi_sp %>% 
+  curr_msoas <- vi %>% 
     filter(Code == vuln_msoa | Code %in% hospitals_vi$msoa11) %>% 
     mutate(row_num = row_number())
   

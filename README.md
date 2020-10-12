@@ -77,3 +77,5 @@ To contribute to this project, please follow [GitHub Flow](https://guides.github
 ## Getting help
 If you encounter a clear bug, please file a minimal reproducible example in [issues](https://github.com/britishredcrosssociety/local-lockdown/issues).
 
+## Credits
+[Contains public sector information licensed under the Open Government Licence v3.0.](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)

@@ -234,8 +234,13 @@ ui <- function(request) {
       label = "Type of vulnerability",
       choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")
     ),
-
+    
     br(),
+    br(),
+    
+    p(style="text-align: justify;",
+      a(href = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/", target = "_blank", "Contains public sector information licensed under the Open Government Licence v3.0.")),
+
     br(),
     br(),
 

@@ -216,7 +216,8 @@ ui <- function(request) {
     # p(" "),
     # p(" "),
     br(),
-    p("This tool helps you find hospitals to use for COVID-19 testing sites. 
+    p(style="text-align: justify;",
+      "This tool helps you find hospitals to use for COVID-19 testing sites. 
       Use the drop-down box below to select a Local Authority. 
       The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 

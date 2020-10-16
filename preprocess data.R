@@ -25,8 +25,8 @@ vi %>%
 
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
-# This URL corresponds to 18 September 2020 (week 38):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/919094/Weekly_COVID19_report_data_w38.xlsx",
+# This URL corresponds to up to the 2 October 2020 (week 40) - so data up til the end of week 39:
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/923669/Weekly_COVID19_report_data_w40.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 12. All weeks rates UTLA", skip = 7)
@@ -66,7 +66,7 @@ covid_raw <- rename_with(covid_raw, ~ gsub("week ", "", .x, fixed = TRUE))
 
 unlink(tf); rm(tf)
 
-# ----- England cases per 100,000 per week ------
+# ----- England cases per 100,000 per week ------ #should this be UK now?
 # https://coronavirus.data.gov.uk/
 # API guide
 # https://coronavirus.data.gov.uk/developers-guide 
@@ -89,6 +89,7 @@ structure <- list(
   cases = list(
     daily = "newCasesByPublishDate")
 )
+
 
 # The "httr::GET" method automatically encodes 
 # the URL and its parameters:
@@ -121,17 +122,29 @@ daily_cases_eng <- jsonlite::fromJSON(json_text)
 daily_cases_eng <- daily_cases_eng$data
 
 
-# for this example remove first four rows to make the weeks correct
-daily_cases_eng <- daily_cases_eng[-c(1:4),]
-daily_cases_eng$week <- week(daily_cases_eng$date)
+#changed to using strftime with %V option as it calculates the week in the year based on date so you don't have to have a complete week like in lubridate (i think)
+daily_cases_eng$week <- strftime(daily_cases_eng$date, format="%V")
 
 # sum by week - divide by population * 100,000 to get cases per 100000 for each week
-#ONS population of england: https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates#:~:text=The%20UK%20population%20was%20estimated,the%20year%20to%20mid%2D2018.
-eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/66796800)*100000,2))
+#ONS population of the UK: https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates#:~:text=The%20UK%20population%20was%20estimated,the%20year%20to%20mid%2D2018.
+#ONS population mid year 2019 estimates - UK 66,696,807, England 56,286,961
+eng_cases_per_100000 <- daily_cases_eng %>% group_by(week) %>% summarise(week_cases_per_100000=round((sum(cases)/56286961)*100000,2))
 
 # Match weeks to covid_raw
-eng_cases_per_100000 <- eng_cases_per_100000[-c(37:38),]
-eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
+# so that calculation is always correct using column heading from covid raw 
+headings <- colnames(covid_raw)
+# - infection rate data starts at week five
+starts_at <- as.numeric(headings[3])
+# last column heading is current last week of lad infection rate data
+ends_at <-as.numeric(tail(headings, n=1))
+
+eng_cases_per_100000$week <- as.numeric(as.character(eng_cases_per_100000$week))
+eng_cases_per_100000 <-  filter(eng_cases_per_100000, week >= starts_at & week <= ends_at)
+
+
+#eng_cases_per_100000 <- eng_cases_per_100000[-c(1:4),]
+#eng_cases_per_100000 <- eng_cases_per_100000[-c(37:38),]
+
 
 #to merge with covid raw 
 eng_cases_per_100000_wide <- eng_cases_per_100000 %>% pivot_wider(c(week), names_from=week, values_from=week_cases_per_100000)
@@ -146,7 +159,8 @@ write_csv(covid_raw, 'data/all_covid_infection_rate_data.csv')
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-shielded = read_csv("https://files.digital.nhs.uk/BC/85E39A/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-09-09.csv")
+# this is the data for up to 08/10/2020
+shielded = read_csv("https://files.digital.nhs.uk/6E/B9AB85/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-10-08.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)
@@ -168,14 +182,19 @@ shielded = shielded %>%
 ## - Economic inactivity rate: {white or ethnic minority} and {UK born or not}
 ##
 ## Based on this URL: https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.jsonstat.json?geography=1811939329...1811939332,1811939334...1811939336,1811939338...1811939497,1811939499...1811939501,1811939503,1811939505...1811939507,1811939509...1811939517,1811939519,1811939520,1811939524...1811939570,1811939575...1811939599,1811939601...1811939628,1811939630...1811939634,1811939636...1811939647,1811939649,1811939655...1811939664,1811939667...1811939680,1811939682,1811939683,1811939685,1811939687...1811939704,1811939707,1811939708,1811939710,1811939712...1811939717,1811939719,1811939720,1811939722...1811939730,943718401...943718419,943718421...943718463,943718465...943718497,943718499...943718512,943718420,943718464,943718498&date=latest&variable=861...868,873...880&measures=20599,21001,21002,21003
-##
+#### - testing - ###
+## new url test: https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.jsonstat.json?geography=1820327937...1820328307&date=latest&variable=861...864&measures=20599,21001,21002,21003
+#x <- nomis_data_info(id='NM_17_5')
+#a <- nomis_search(name = '*Population*', keywords = c('population','annual'))
+#test <- filter(a, name.value == 'annual population survey (variables (percentages))')
+####
+
 aps_raw = nomis_get_data(
   id = "NM_17_5",
   date = "latest",
   geography = "TYPE432",  # 2019 LAD
   variable = "861...864",  # "861...868,873...880",
   measures = "20599,21001,21002,21003",
-  
   # variables to keep
   select = c(
     "GEOGRAPHY_CODE",
@@ -251,7 +270,7 @@ imd = bind_rows(imd, wimd, simd, ni_imd)
 
 # ---- Furlough ----
 # https://www.gov.uk/government/statistics/coronavirus-job-retention-scheme-statistics-september-2020
-# This URL corresponds to data from Sept 2020:
+# This URL corresponds to data from Sept 2020: next update will be on october 22nd
 GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/910962/CJRS_Statistics_August_2020_tables.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 

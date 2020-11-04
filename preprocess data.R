@@ -18,9 +18,13 @@ vi = read_sf("https://github.com/britishredcrosssociety/covid-19-vulnerability/r
 # lookup local authorities that each MSOA is in
 msoa_lad = read_csv("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/lookup%20msoa%20to%20lad.csv")
 
+# lookup primary care networks to MSOA centroids
+msoa_pcn = read_csv("data/lookup msoa to primary care network.csv")
+
 # save a local copy
 vi %>% 
   left_join(msoa_lad, by = c("Code" = "MSOA11CD")) %>% 
+  left_join(msoa_pcn, by = c("Code" = "MSOA11CD")) %>% 
   write_sf("data/vulnerability.geojson")
 
 # ---- Weekly infection rates ----

@@ -26,7 +26,7 @@ vi %>%
 # ---- Weekly infection rates ----
 # Fetch National COVID-19 surveillance data report from https://www.gov.uk/government/publications/national-covid-19-surveillance-reports
 # This URL corresponds to 18 September 2020 (week 38):
-GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/919094/Weekly_COVID19_report_data_w38.xlsx",
+GET("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/923669/Weekly_COVID19_report_data_w40.xlsx",
     write_disk(tf <- tempfile(fileext = ".xlsx")))
 
 covid = read_excel(tf, sheet = "Figure 12. All weeks rates UTLA", skip = 7)
@@ -37,12 +37,10 @@ covid = covid %>%
   filter(str_sub(LAD19CD, 1, 1) == "E") %>% 
   mutate(across(starts_with("week"), as.numeric))
 
-
 # Hackney and City of London boroughs are counted as one. Split into separate rows, using the same data for each
 covid = bind_rows(covid %>% filter(LAD19CD != "E09000012/E09000001"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000012"),
                   covid %>% filter(LAD19CD == "E09000012/E09000001") %>% mutate(LAD19CD = "E09000001"))
-
 
 # Calculate average rate for past three weeks, plus get latest rate
 covid_sum = covid %>% 
@@ -62,7 +60,6 @@ covid_raw = lads %>%
 #renaming so will match with england avg.
 covid_raw <- rename_with(covid_raw, ~ gsub("week 0", "", .x, fixed = TRUE))
 covid_raw <- rename_with(covid_raw, ~ gsub("week ", "", .x, fixed = TRUE))
-
 
 unlink(tf); rm(tf)
 
@@ -119,7 +116,6 @@ if (response$status_code >= 400) {
 json_text <- content(response, "text")
 daily_cases_eng <- jsonlite::fromJSON(json_text)
 daily_cases_eng <- daily_cases_eng$data
-
 
 # for this example remove first four rows to make the weeks correct
 daily_cases_eng <- daily_cases_eng[-c(1:4),]

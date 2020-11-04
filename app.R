@@ -57,7 +57,11 @@ lad <- lad %>%
 
 # total lad's in England 382, total without inf rate 260 (this varies based on the week), 150 with data at some point in covid_sum
 
-covid_inf <- read_csv("data/all_covid_infection_rate_data.csv")
+# covid_inf <- read_csv("data/all_covid_infection_rate_data.csv")
+
+# Use Covid data from Colin Angus's Shiny dashboard: https://github.com/VictimOfMaths/COVID_LA_Plots | https://victimofmaths.shinyapps.io/COVID_LA_Plots/
+covid_inf <- read_csv("https://github.com/VictimOfMaths/COVID_LA_Plots/raw/master/LACases.csv")
+covid_inf$date <- as.Date(covid_inf$date)
 
 # # ---- UI ----
 # ui <- bootstrapPage(
@@ -207,7 +211,7 @@ body_colwise <- dashboardBody(
 ui <- function(request) {
   dashboardPage(
   skin = "red",
-  header = dashboardHeader(title = "Local Lockdown", titleWidth = "300px",
+  header = dashboardHeader(title = "Mobile Covid-19 Testing Site Tool", titleWidth = "300px",
                            #to add in bookmark button
                            tags$li(class="dropdown", bookmarkButton(), style = "padding-top: 8px; padding-bottom: 8px; padding-right: 15px")),
   sidebar = dashboardSidebar(
@@ -217,7 +221,7 @@ ui <- function(request) {
     # p(" "),
     br(),
     p(style="text-align: justify;",
-      "This tool helps you find hospitals to use for COVID-19 testing sites. 
+      "This tool helps you find potential sites to use for COVID-19 mobile testing.
       Use the drop-down box below to select a Local Authority. 
       The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
@@ -729,51 +733,68 @@ server <- function(input, output) {
 
   ## plotting infection rate statistics
   output$latest_inf <- renderEcharts4r({
-    curr_stats <- covid_inf %>% filter(Name == input$lad)
-
+    curr_stats <- covid_inf %>% 
+      filter(name == input$lad) %>% 
+      select(country, code, name, date, caserate_avg)
+    
+    curr_nation <- unique(curr_stats$country)
+    
+    lag <- 3  # discount most recent three days' figures (which are under-reported)
+    
+    # Get cases for the nation the selected LA is in
+    country_stats <- covid_inf %>% 
+      filter(name == curr_nation) %>% 
+      select(date, national_avg = caserate_avg)
+    
     # convert england data into right format
-    eng_stats <- covid_inf %>% filter(Name == "England")
-    eng_stats <- eng_stats %>% select(-one_of("LAD19CD", "Name"))
-    eng_stats <- eng_stats %>% pivot_longer(c(names(eng_stats)), names_to = "stat", values_to = "eng_cases")
-    # print(eng_stats)
+    # eng_stats <- covid_inf2 %>% filter(Name == "England")
+    # eng_stats <- eng_stats %>% select(-one_of("LAD19CD", "Name"))
+    # eng_stats <- eng_stats %>% pivot_longer(c(names(eng_stats)), names_to = "stat", values_to = "eng_cases")
+    # # print(eng_stats)
 
     # if lad has no infection data
-    any_info <- curr_stats %>% select(-one_of("LAD19CD", "Name"))
+    any_info <- curr_stats %>% select(-one_of("country", "code", "name"))
 
     # where data is available
     if (!all(is.na(any_info))) {
 
       # transpose
-      inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
-
+      # inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
+      
+      inf_rate <- left_join(any_info, country_stats, by = "date") %>% 
+        na.omit() %>% 
+        mutate(caserate_avg = round(caserate_avg, 1),
+               national_avg = round(national_avg, 1)) %>% 
+        arrange(date) %>% 
+        filter(row_number() < n() - lag)
+      
       # to highlight current infection rate
       y_point <- inf_rate %>%
-        select(value) %>%
+        select(caserate_avg) %>%
         slice(n())
       x_point <- inf_rate %>%
-        select(stat) %>%
+        select(date) %>%
         slice(n())
 
       # add eng rates
-      inf_rate <- inf_rate %>% mutate(eng_cases = eng_stats$eng_cases)
-
-
+      # inf_rate <- inf_rate %>% mutate(eng_cases = eng_stats$eng_cases)
+      
       # LAD specific legend
       area <- paste0(input$lad)
+      nation <- paste0(curr_nation, " (average)")
 
       # format xasix label
       label <- paste("Cases per", "100,000", sep = "\n")
 
-
       # plot
       scatter <- inf_rate %>%
-        e_charts(x = stat) %>%
-        e_line(value, name = area, symbolSize = 8) %>%
-        e_line(eng_cases, name = "England (average)", symbolSize = 8) %>%
-        e_x_axis(axisLabel = list(interval = 0), name = "Week", nameLocation = "middle", nameGap = 25) %>%
+        e_charts(x = date) %>%
+        e_line(caserate_avg, name = area, symbolSize = 5) %>%
+        e_line(national_avg, name = nation, symbolSize = 5) %>%
+        e_x_axis(axisLabel = list(interval = 0), name = NA, nameLocation = "middle", nameGap = 25) %>%
         e_y_axis(axisLabel = list(interval = 0), name = label, nameLocation = "middle", nameGap = 25) %>%
         e_mark_point(area,
-                     data = list(xAxis = x_point$stat, yAxis = y_point$value, value = y_point$value),
+                     data = list(xAxis = x_point$date, yAxis = y_point$caserate_avg, value = y_point$caserate_avg),
                      label = list(fontSize = 8)) %>%
         e_tooltip(trigger = "axis")
     }

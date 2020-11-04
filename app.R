@@ -55,6 +55,11 @@ lad <- lad %>%
 covid_inf <- read_csv("https://github.com/VictimOfMaths/COVID_LA_Plots/raw/master/LACases.csv")
 covid_inf$date <- as.Date(covid_inf$date)
 
+# Load Primary Care Networks
+pcn_shp <- read_sf("data/Primary_Care_Networks.shp")
+pcn_shp <- pcn_shp %>% 
+  mutate(Name = str_to_title(str_remove(PCN_Name, " PCN")))
+
 # # ---- UI ----
 # https://community.rstudio.com/t/big-box-beside-4-small-boxes-using-shinydashboard/39489
 body_colwise <- dashboardBody(
@@ -64,79 +69,68 @@ body_colwise <- dashboardBody(
   use_waiter(),
   waiter_show_on_load(html = tagList(
     spin_5(),
-    div(p("Finding track and trace locations"), style = "padding-top:25px;")
+    div(p("Finding mobile testing sites"), style = "padding-top:25px;")
   )),
 
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   tags$head(includeCSS("styles.css")),
-  tags$head(HTML("<title>Local Lockdown | Find potential mobile testing sites</title>")),
+  tags$head(HTML("<title>Find potential Covid-19 mobile testing sites | British Red Cross</title>")),
   
-  # - Row one -
-  fluidRow(
-    column(
-      width = 12,
-      column(
-        width = 6,
-        box(
-          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
-          title = "Neighbourhood Vulnerability",
-          leafletOutput("map", height = "395px")
-        )
+  tabItems(
+    tabItem(
+      tabName = "la",
+            
+      selectInput("lad",
+                  label = "Choose a Local Authority",
+                  choices = sort(la_data$Name),
+                  selected = "Tower Hamlets"
       ),
-      
-      column(
-        width = 6,
-        box(
-          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
-          title = "COVID-19 Infection Rate (per 100,000 people)",
-          # Plot
-          echarts4rOutput("latest_inf", height = "395px")
-        )
-      )
-    ),
+      # br(),
 
-    # - Row two -
-    fluidRow( # title='demographic data',
-      column(
-        width = 12,
+      # - Row one -
+      fluidRow(
         column(
-          width = 4,
-          box(
-            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-            title = "Furlough rate",
-            # Plot
-            echarts4rOutput("furlough", height = "230px")
+          width = 12,
+          column(
+            width = 6,
+            box(
+              width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+              title = "Neighbourhood Vulnerability",
+              leafletOutput("map", height = "395px")
+            )
+          ),
+          
+          column(
+            width = 6,
+            box(
+              width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+              title = "COVID-19 Infection Rate (per 100,000 people)",
+              # Plot
+              echarts4rOutput("latest_inf", height = "395px")
+            )
           )
         ),
-        
-        column(
-          width = 4,
-          box(
-            width = NULL, solidHeader = TRUE, status = "danger",
-            title = "Population living in highly deprived areas", height = "250px", align = "center",
-            echarts4rOutput("IMD", height = "230px")
-          )
-        ),
-        
-        column(
-          width = 4,
-          box(
-            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-            title = "Population Breakdown", align = "center",
-            echarts4rOutput("pop_breakdown", height = "230px")
-          )
-        ),
-
-        # - Row three -
-        fluidRow(
+    
+        # - Row two -
+        fluidRow( # title='demographic data',
           column(
             width = 12,
             column(
               width = 4,
               box(
+                width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+                title = "Furlough rate",
+                # Plot
+                echarts4rOutput("furlough", height = "230px")
+              )
+            ),
+            
+            column(
+              width = 4,
+              box(
                 width = NULL, solidHeader = TRUE, status = "danger",
-                title = "No. clinically extremely vulnerable", height = "250px", align = "center",
-                echarts4rOutput("cl_vunl", height = "230px")
+                title = "Population living in highly deprived areas", height = "250px", align = "center",
+                echarts4rOutput("IMD", height = "230px")
               )
             ),
             
@@ -144,26 +138,63 @@ body_colwise <- dashboardBody(
               width = 4,
               box(
                 width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-                title = "Homeless rate",
-                # Plot
-                echarts4rOutput("homelessness", height = "230px")
+                title = "Population Breakdown", align = "center",
+                echarts4rOutput("pop_breakdown", height = "230px")
               )
             ),
+    
+            # - Row three -
+            fluidRow(
+              column(
+                width = 12,
+                column(
+                  width = 4,
+                  box(
+                    width = NULL, solidHeader = TRUE, status = "danger",
+                    title = "No. clinically extremely vulnerable", height = "250px", align = "center",
+                    echarts4rOutput("cl_vunl", height = "230px")
+                  )
+                ),
+                
+                column(
+                  width = 4,
+                  box(
+                    width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+                    title = "Homeless rate",
+                    # Plot
+                    echarts4rOutput("homelessness", height = "230px")
+                  )
+                ),
+    
+                column(
+                  width = 4,
+                  box(
+                    width = NULL, solidHeader = TRUE, status = "danger",
+                    title = "People recieving Section 95 support", height = "250px", align = "center",
+                    echarts4rOutput("sec_95", height = "230px")
+                  ),
+                ) # column
+              ) # column
+            ) # fluidRow 3
+          ) # column
+        ) # fluidRow 2
+      ) # fluidRow 1
+    ), # tabItem
+    
+    tabItem(
+      tabName = "pcn",
 
-            column(
-              width = 4,
-              box(
-                width = NULL, solidHeader = TRUE, status = "danger",
-                title = "People recieving Section 95 support", height = "250px", align = "center",
-                echarts4rOutput("sec_95", height = "230px")
-              ),
-            )
-          )
-        )
-      )
+      selectInput("pcn_name",
+                  label = "Choose a Primary Care Network",
+                  choices = sort(pcn_shp$Name)
+                  # selected = "Tower Hamlets"
+      ),
+      
+      #leafletOutput("pcn_map", height = "395px")
     )
-  )
-)
+
+  ) # tabItems
+) # dashboardBody
 
 ui <- function(request) {
   dashboardPage(
@@ -184,12 +215,14 @@ ui <- function(request) {
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
       a cluster to narrow in on the parking lots."),
     br(),
-    selectInput("lad",
-      label = "Choose a Local Authority",
-      choices = sort(la_data$Name),
-      selected = "Tower Hamlets"
+    
+    sidebarMenu(
+      menuItem("Local Authorities", tabName = "la", icon = icon("dashboard")),
+      menuItem("Primary Care Networks", icon = icon("th"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
     ),
     br(),
+    
+    
 
     selectInput("vi",
       label = "Type of vulnerability",

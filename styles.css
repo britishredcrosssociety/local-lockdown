@@ -2,8 +2,11 @@ body, label, input, button, select {
   font-family: 'HelveticaNeue', Arial, Verdana, sans-serif;
   font-weight: 200;
 }
+
 h1, h2, h3, h4 { font-weight: 400; }
 
 #sidebarItemExpanded {
   padding: 0 10px 10px 10px;
 }
+
+label.control-label, .selectize-control.single{ z-index:1000; }

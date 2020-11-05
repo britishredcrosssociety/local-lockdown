@@ -79,107 +79,98 @@ body_colwise <- dashboardBody(
   tags$head(includeCSS("styles.css")),
   tags$head(HTML("<title>Find potential Covid-19 mobile testing sites | British Red Cross</title>")),
 
-            
-      # selectInput("lad",
-      #             label = "Choose a Local Authority",
-      #             choices = sort(la_data$Name),
-      #             selected = "Tower Hamlets"
-      # ),
-      # br(),
+  # - Row one -
+  fluidRow(
+    column(
+      width = 12,
+      column(
+        width = 6,
+        box(
+          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+          title = "Neighbourhood Vulnerability",
+          leafletOutput("map", height = "395px")
+        )
+      ),
+      
+      column(
+        width = 6,
+        box(
+          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
+          title = "COVID-19 Infection Rate (per 100,000 people)",
+          # Plot
+          echarts4rOutput("latest_inf", height = "395px")
+        )
+      )
+    ),
 
-      # - Row one -
-      fluidRow(
+    # - Row two -
+    fluidRow( # title='demographic data',
+      column(
+        width = 12,
         column(
-          width = 12,
-          column(
-            width = 6,
-            box(
-              width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
-              title = "Neighbourhood Vulnerability",
-              leafletOutput("map", height = "395px")
-            )
-          ),
-          
-          column(
-            width = 6,
-            box(
-              width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
-              title = "COVID-19 Infection Rate (per 100,000 people)",
-              # Plot
-              echarts4rOutput("latest_inf", height = "395px")
-            )
+          width = 4,
+          box(
+            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+            title = "Furlough rate",
+            # Plot
+            echarts4rOutput("furlough", height = "230px")
           )
         ),
-    
-        # - Row two -
-        fluidRow( # title='demographic data',
+        
+        column(
+          width = 4,
+          box(
+            width = NULL, solidHeader = TRUE, status = "danger",
+            title = "Population living in highly deprived areas", height = "250px", align = "center",
+            echarts4rOutput("IMD", height = "230px")
+          )
+        ),
+        
+        column(
+          width = 4,
+          box(
+            width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+            title = "Population Breakdown", align = "center",
+            echarts4rOutput("pop_breakdown", height = "230px")
+          )
+        ),
+
+        # - Row three -
+        fluidRow(
           column(
             width = 12,
             column(
               width = 4,
               box(
-                width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-                title = "Furlough rate",
-                # Plot
-                echarts4rOutput("furlough", height = "230px")
+                width = NULL, solidHeader = TRUE, status = "danger",
+                title = "No. clinically extremely vulnerable", height = "250px", align = "center",
+                echarts4rOutput("cl_vunl", height = "230px")
               )
             ),
             
+            column(
+              width = 4,
+              box(
+                width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
+                title = "Homeless rate",
+                # Plot
+                echarts4rOutput("homelessness", height = "230px")
+              )
+            ),
+
             column(
               width = 4,
               box(
                 width = NULL, solidHeader = TRUE, status = "danger",
-                title = "Population living in highly deprived areas", height = "250px", align = "center",
-                echarts4rOutput("IMD", height = "230px")
+                title = "People recieving Section 95 support", height = "250px", align = "center",
+                echarts4rOutput("sec_95", height = "230px")
               )
-            ),
-            
-            column(
-              width = 4,
-              box(
-                width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-                title = "Population Breakdown", align = "center",
-                echarts4rOutput("pop_breakdown", height = "230px")
-              )
-            ),
-    
-            # - Row three -
-            fluidRow(
-              column(
-                width = 12,
-                column(
-                  width = 4,
-                  box(
-                    width = NULL, solidHeader = TRUE, status = "danger",
-                    title = "No. clinically extremely vulnerable", height = "250px", align = "center",
-                    echarts4rOutput("cl_vunl", height = "230px")
-                  )
-                ),
-                
-                column(
-                  width = 4,
-                  box(
-                    width = NULL, height = "250px", solidHeader = TRUE, status = "danger",
-                    title = "Homeless rate",
-                    # Plot
-                    echarts4rOutput("homelessness", height = "230px")
-                  )
-                ),
-    
-                column(
-                  width = 4,
-                  box(
-                    width = NULL, solidHeader = TRUE, status = "danger",
-                    title = "People recieving Section 95 support", height = "250px", align = "center",
-                    echarts4rOutput("sec_95", height = "230px")
-                  )
-                ) # column
-              ) # column
-            ) # fluidRow 3
+            ) # column
           ) # column
-        ) # fluidRow 2
-      ) # fluidRow 1
-
+        ) # fluidRow 3
+      ) # column
+    ) # fluidRow 2
+  ) # fluidRow 1
 ) # dashboardBody
 
 ui <- function(request) {
@@ -190,7 +181,7 @@ ui <- function(request) {
                            tags$li(class="dropdown", bookmarkButton(), style = "padding-top: 8px; padding-bottom: 8px; padding-right: 15px")),
   sidebar = dashboardSidebar(
     width = "300px",
-    # insert dropdown menu and text here
+    
     sidebarMenu(
       id = "sidebar",
       menuItem("Local Authorities", tabName = "la", icon = icon("building"), startExpanded = TRUE,
@@ -203,9 +194,8 @@ ui <- function(request) {
       
       menuItem("Primary Care Networks", icon = icon("stethoscope"), tabName = "pcn", #badgeLabel = "new", badgeColor = "green",
                selectInput("pcn_name",
-                           label = "Choose a Primary Care Network (black outlines on the map)",
+                           label = "Choose a Primary Care Network",
                            choices = sort(pcn_shp$Name)
-                           # selected = "Tower Hamlets"
                )
                )
     ),
@@ -213,7 +203,7 @@ ui <- function(request) {
     
     p(style="text-align: justify;",
       "This tool helps you find potential sites to use for COVID-19 mobile testing.
-      Use the drop-down box below to select a Local Authority. 
+      Use the drop-down boxes above to select a Local Authority or Primary Care Network.
       The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
       Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
       a cluster to narrow in on the parking lots."),
@@ -243,7 +233,7 @@ server <- function(input, output) {
   hospital_icon <- makeIcon("www/hospital-red.png", 20, 20)
   carpark_icon <- makeIcon("www/parking.png", 20, 20)
 
-  # ---- Draw Local Authorities basemap ----
+  # ---- Draw basemap ----
   # set up the static parts of the map (that don't change as user selects different options)
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
@@ -302,119 +292,7 @@ server <- function(input, output) {
         input$vi == "Overall vulnerability" ~ Vulnerability.decile
       ))
   })
-
-  pal <- colorFactor("viridis", c(1:10), reverse = TRUE)
-
-  observe({
-    # get which sidebar item is currently expanded
-    req(input$sidebarItemExpanded)
-    
-    vi_data = NULL
-    curr_bounds_lat = 0
-    curr_bounds_lng = 0
-    curr_polygon = NULL
-    
-    if (input$sidebarItemExpanded == "LocalAuthorities") {
-      curr_polygon <- filteredLA()
-      
-      vi_data <- filteredVI()
-      
-      curr_bounds_lng = curr_polygon$long
-      curr_bounds_lat = curr_polygon$lat
-      
-    } else {
-      curr_polygon <- filteredPCN()
-      pcn_point <- curr_polygon %>% 
-        st_centroid() %>% 
-        st_geometry()
-      
-      vi_data <- filteredVI_PCN()
-      
-      curr_bounds_lng <- pcn_point[[1]][1]
-      curr_bounds_lat <- pcn_point[[1]][2]
-      
-    }
-    
-    leafletProxy("map") %>%
-      clearShapes() %>%
-      
-      addPolygons(
-        data = vi_data,
-        fillColor = ~ pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7,
-        popup = ~ paste(
-          "<b>", Name, "</b><br/><br/>",
-          "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
-          "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
-          "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
-          "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>"
-        )
-      ) %>% 
-
-      addPolygons(
-        data = curr_polygon, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
-      ) %>% 
-      
-      setView(lng = curr_bounds_lng, lat = curr_bounds_lat, zoom = 10)
-  })
-
-  # Use a separate observer to recreate the legend as needed.
-  observe({
-    leafletProxy("map", data = vi) %>%
-      clearControls() %>%
-      addLegend_decreasing(
-        position = "bottomright",
-        pal = pal,
-        values = ~Vulnerability.decile,
-        title = paste0(input$vi, tags$br(), " (10 = most vulnerable)"),
-        opacity = 0.8,
-        decreasing = TRUE
-      )
-  })
   
-  
-  # ---- Draw Primary Care Networks basemap ----
-  # set up the static parts of the map (that don't change as user selects different options)
-  output$pcn_map <- renderLeaflet({
-    leaflet(options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
-      # setView(lat = 54.00366, lng = -2.547855, zoom = 7) %>% # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      
-      # Add button to reset zoom
-      addEasyButton(easyButton(
-        icon = "fa-globe", title = "Reset zoom level",
-        onClick = JS("function(btn, map){ map.setZoom(6); }")
-      )) %>%
-      
-      # Add measuring tool to allow computation of distances as the crow flies
-      addMeasure(
-        position = "bottomleft",
-        primaryLengthUnit = "miles",
-        secondaryLengthUnit = "kilometers",
-        activeColor = "#21908D",
-        completedColor = "#3B1C8C"
-      ) %>%
-      
-      # Add hospital markers
-      addMarkers(
-        data = markers_hosp,
-        popup = ~popup,
-        # icon=hospital_icon
-        icon = list(iconUrl = "www/hospital-red.png", iconSize = c(20, 20))
-      ) %>%
-      
-      # Add carpark markers to firs displayed map?
-      addMarkers(
-        data = markers_car,
-        popup = ~popup,
-        clusterOptions = markerClusterOptions(),
-        # icon=hospital_icon
-        icon = list(iconUrl = "www/parking.png", iconSize = c(20, 20))
-      )
-  })
-  
-  
-  # ---- Change map when user selects a PCN ----
-  # Show data for and zoom to selected PCN
   filteredPCN <- reactive({
     pcn_shp %>% filter(Name == input$pcn_name)
   })
@@ -435,20 +313,48 @@ server <- function(input, output) {
         input$vi == "Overall vulnerability" ~ Vulnerability.decile
       ))
   })
-  
+
+  pal <- colorFactor("viridis", c(1:10), reverse = TRUE)
+
   observe({
+    # get which sidebar item is currently expanded
+    req(input$sidebarItemExpanded)
     
+    # Variables to use for map plotting
+    vi_data = NULL
+    curr_bounds_lat = 0
+    curr_bounds_lng = 0
+    curr_polygon = NULL
     
-    curr_PCN <- filteredPCN()
+    if (input$sidebarItemExpanded == "LocalAuthorities") {
+      # User selected a LA, so get details
+      curr_polygon <- filteredLA()
+      
+      vi_data <- filteredVI()
+      
+      curr_bounds_lng = curr_polygon$long
+      curr_bounds_lat = curr_polygon$lat
+      
+    } else {
+      # User selected a PCN, so get details
+      curr_polygon <- filteredPCN()
+      pcn_point <- curr_polygon %>% 
+        st_centroid() %>% 
+        st_geometry()
+      
+      vi_data <- filteredVI_PCN()
+      
+      curr_bounds_lng <- pcn_point[[1]][1]
+      curr_bounds_lat <- pcn_point[[1]][2]
+      
+    }
     
-    # pcn_shp_box = st_bbox(curr_PCN)
-    pcn_point = curr_PCN %>% st_centroid() %>% st_geometry()
-    
-    leafletProxy("pcn_map", data = curr_PCN) %>%
+    # Plot current LA or PCN on map
+    leafletProxy("map") %>%
       clearShapes() %>%
       
       addPolygons(
-        data = filteredVI_PCN(),
+        data = vi_data,
         fillColor = ~ pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7,
         popup = ~ paste(
           "<b>", Name, "</b><br/><br/>",
@@ -457,18 +363,20 @@ server <- function(input, output) {
           "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
           "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>"
         )
-      ) %>%
-      
+      ) %>% 
+
+      # Add LA or PCN boundary
       addPolygons(
-        data = curr_PCN, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
+        data = curr_polygon, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
       ) %>% 
       
-      setView(lng = pcn_point[[1]][1], lat = pcn_point[[1]][2], zoom = 11)
+      # Zoom to current LA or PCN
+      setView(lng = curr_bounds_lng, lat = curr_bounds_lat, zoom = 10)
   })
-  
+
   # Use a separate observer to recreate the legend as needed.
   observe({
-    leafletProxy("pcn_map", data = vi) %>%
+    leafletProxy("map", data = vi) %>%
       clearControls() %>%
       addLegend_decreasing(
         position = "bottomright",

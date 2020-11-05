@@ -202,7 +202,7 @@ body_colwise <- dashboardBody(
 ui <- function(request) {
   dashboardPage(
   skin = "red",
-  header = dashboardHeader(title = "Mobile Covid-19 Testing Site Tool", titleWidth = "300px",
+  header = dashboardHeader(title = "Covid-19 Testing Site Tool", titleWidth = "300px",
                            #to add in bookmark button
                            tags$li(class="dropdown", bookmarkButton(), style = "padding-top: 8px; padding-bottom: 8px; padding-right: 15px")),
   sidebar = dashboardSidebar(
@@ -210,8 +210,8 @@ ui <- function(request) {
     # insert dropdown menu and text here
     sidebarMenu(
       id = "sidebar",
-      menuItem("Local Authorities", tabName = "la", icon = icon("dashboard")),
-      menuItem("Primary Care Networks", icon = icon("hospital"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
+      menuItem("Local Authorities", tabName = "la", icon = icon("building")),
+      menuItem("Primary Care Networks", icon = icon("stethoscope"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
     ),
     br(),
     
@@ -418,7 +418,7 @@ server <- function(input, output) {
   observe({
     curr_PCN <- filteredPCN()
     
-    pcn_shp_box = st_bbox(curr_PCN)
+    # pcn_shp_box = st_bbox(curr_PCN)
     pcn_point = curr_PCN %>% st_centroid() %>% st_geometry()
     
     leafletProxy("pcn_map", data = curr_PCN) %>%
@@ -441,8 +441,6 @@ server <- function(input, output) {
       ) %>% 
       
       setView(lng = pcn_point[[1]][1], lat = pcn_point[[1]][2], zoom = 12)
-      
-      # fitBounds(lat1 = pcn_shp_box[1], lng1 = pcn_shp_box[2], lat2 = pcn_shp_box[3], lng2 = pcn_shp_box[4])
   })
   
   # Use a separate observer to recreate the legend as needed.

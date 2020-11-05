@@ -250,7 +250,7 @@ server <- function(input, output) {
   # ---- Draw Local Authorities basemap ----
   # set up the static parts of the map (that don't change as user selects different options)
   output$map <- renderLeaflet({
-    leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
+    leaflet(options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
       setView(lat = 54.00366, lng = -2.547855, zoom = 7) %>% # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
       addProviderTiles(providers$CartoDB.Positron) %>%
 
@@ -440,7 +440,7 @@ server <- function(input, output) {
         data = curr_PCN, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
       ) %>% 
       
-      setView(lng = pcn_point[[1]][1], lat = pcn_point[[1]][2], zoom = 12)
+      setView(lng = pcn_point[[1]][1], lat = pcn_point[[1]][2], zoom = 11)
   })
   
   # Use a separate observer to recreate the legend as needed.

@@ -78,16 +78,13 @@ body_colwise <- dashboardBody(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   tags$head(includeCSS("styles.css")),
   tags$head(HTML("<title>Find potential Covid-19 mobile testing sites | British Red Cross</title>")),
-  
-  tabItems(
-    tabItem(
-      tabName = "la",
+
             
-      selectInput("lad",
-                  label = "Choose a Local Authority",
-                  choices = sort(la_data$Name),
-                  selected = "Tower Hamlets"
-      ),
+      # selectInput("lad",
+      #             label = "Choose a Local Authority",
+      #             choices = sort(la_data$Name),
+      #             selected = "Tower Hamlets"
+      # ),
       # br(),
 
       # - Row one -
@@ -175,28 +172,14 @@ body_colwise <- dashboardBody(
                     width = NULL, solidHeader = TRUE, status = "danger",
                     title = "People recieving Section 95 support", height = "250px", align = "center",
                     echarts4rOutput("sec_95", height = "230px")
-                  ),
+                  )
                 ) # column
               ) # column
             ) # fluidRow 3
           ) # column
         ) # fluidRow 2
       ) # fluidRow 1
-    ), # tabItem
-    
-    tabItem(
-      tabName = "pcn",
 
-      selectInput("pcn_name",
-                  label = "Choose a Primary Care Network (black outlines on the map)",
-                  choices = sort(pcn_shp$Name)
-                  # selected = "Tower Hamlets"
-      ),
-      
-      leafletOutput("pcn_map", height = "500px")
-    )
-
-  ) # tabItems
 ) # dashboardBody
 
 ui <- function(request) {
@@ -210,8 +193,21 @@ ui <- function(request) {
     # insert dropdown menu and text here
     sidebarMenu(
       id = "sidebar",
-      menuItem("Local Authorities", tabName = "la", icon = icon("building")),
-      menuItem("Primary Care Networks", icon = icon("stethoscope"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
+      menuItem("Local Authorities", tabName = "la", icon = icon("building"), startExpanded = TRUE,
+               selectInput("lad",
+                           label = "Choose a Local Authority",
+                           choices = sort(la_data$Name),
+                           selected = "Tower Hamlets"
+               )
+               ),
+      
+      menuItem("Primary Care Networks", icon = icon("stethoscope"), tabName = "pcn", #badgeLabel = "new", badgeColor = "green",
+               selectInput("pcn_name",
+                           label = "Choose a Primary Care Network (black outlines on the map)",
+                           choices = sort(pcn_shp$Name)
+                           # selected = "Tower Hamlets"
+               )
+               )
     ),
     br(),
     
@@ -310,12 +306,40 @@ server <- function(input, output) {
   pal <- colorFactor("viridis", c(1:10), reverse = TRUE)
 
   observe({
-    curr_LA <- filteredLA()
-
-    leafletProxy("map", data = curr_LA) %>%
+    # get which sidebar item is currently expanded
+    req(input$sidebarItemExpanded)
+    
+    vi_data = NULL
+    curr_bounds_lat = 0
+    curr_bounds_lng = 0
+    curr_polygon = NULL
+    
+    if (input$sidebarItemExpanded == "LocalAuthorities") {
+      curr_polygon <- filteredLA()
+      
+      vi_data <- filteredVI()
+      
+      curr_bounds_lng = curr_polygon$long
+      curr_bounds_lat = curr_polygon$lat
+      
+    } else {
+      curr_polygon <- filteredPCN()
+      pcn_point <- curr_polygon %>% 
+        st_centroid() %>% 
+        st_geometry()
+      
+      vi_data <- filteredVI_PCN()
+      
+      curr_bounds_lng <- pcn_point[[1]][1]
+      curr_bounds_lat <- pcn_point[[1]][2]
+      
+    }
+    
+    leafletProxy("map") %>%
       clearShapes() %>%
+      
       addPolygons(
-        data = filteredVI(),
+        data = vi_data,
         fillColor = ~ pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7,
         popup = ~ paste(
           "<b>", Name, "</b><br/><br/>",
@@ -324,16 +348,13 @@ server <- function(input, output) {
           "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
           "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>"
         )
-      ) %>%
+      ) %>% 
 
-      # Add car park markers
-      # addMarkers(data = filteredCarPark(),
-      #                   icon = list(iconUrl='www/parking.png',iconSize=c(20,20)),
-      #                   popup = ~popup) %>%
-
-      # addPolygons(fill = FALSE, color = "grey20", weight = 1) %>%  # Local Authority boundaries (don't really need them actually)
-
-      setView(lng = curr_LA$long, lat = curr_LA$lat, zoom = 10)
+      addPolygons(
+        data = curr_polygon, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
+      ) %>% 
+      
+      setView(lng = curr_bounds_lng, lat = curr_bounds_lat, zoom = 10)
   })
 
   # Use a separate observer to recreate the legend as needed.
@@ -416,6 +437,8 @@ server <- function(input, output) {
   })
   
   observe({
+    
+    
     curr_PCN <- filteredPCN()
     
     # pcn_shp_box = st_bbox(curr_PCN)

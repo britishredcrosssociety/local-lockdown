@@ -367,7 +367,7 @@ server <- function(input, output) {
 
       # Add LA or PCN boundary
       addPolygons(
-        data = curr_polygon, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
+        data = curr_polygon, fill = FALSE, color = "black", weight = 2
       ) %>% 
       
       # Zoom to current LA or PCN
@@ -392,186 +392,197 @@ server <- function(input, output) {
   # ---- Local authority statistics plots ----
   # Population statistics bar chart
   output$pop_breakdown <- renderEcharts4r({
-    # select user input LA
-    curr_stats <- la_data %>% filter(Name == input$lad)
-    # print(curr_stats)
-
-    # select bame columns
-    bame_stats <- curr_stats %>% select("Percentage of population who are white UK born", "Percentage of population who are white not UK born", "Percentage of population who are ethnic minority UK born", "Percentage of population who are ethnic minority not UK born")
-    bame_stats <- bame_stats %>%
-      rename("White UK born" = "Percentage of population who are white UK born") %>%
-      rename("White not UK born" = "Percentage of population who are white not UK born") %>%
-      rename("BAME UK born" = "Percentage of population who are ethnic minority UK born") %>%
-      rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
-
-    # avg for each category
-    white_uk <- la_data %>%
-      select("Percentage of population who are white UK born") %>%
-      drop_na("Percentage of population who are white UK born") %>%
-      mutate(avg_white_uk = mean(`Percentage of population who are white UK born`))
-    white_uk <- round(white_uk$avg_white_uk[1], 1)
-
-    # white not uk born
-    white_nuk <- la_data %>%
-      select("Percentage of population who are white not UK born") %>%
-      drop_na("Percentage of population who are white not UK born") %>%
-      mutate(avg_white_nuk = mean(`Percentage of population who are white not UK born`))
-    white_nuk <- round(white_nuk$avg_white_nuk[1], 1)
-
-    # bame uk born
-    bame_uk <- la_data %>%
-      select("Percentage of population who are ethnic minority UK born") %>%
-      drop_na("Percentage of population who are ethnic minority UK born") %>%
-      mutate(avg_bame_uk = mean(`Percentage of population who are ethnic minority UK born`))
-    bame_uk <- round(bame_uk$avg_bame_uk[1], 1)
-
-    # bame not uk born
-    bame_nuk <- la_data %>%
-      select("Percentage of population who are ethnic minority not UK born") %>%
-      drop_na("Percentage of population who are ethnic minority not UK born") %>%
-      mutate(avg_bame_nuk = mean(`Percentage of population who are ethnic minority not UK born`))
-    bame_nuk <- round(bame_nuk$avg_bame_nuk[1], 1)
-
-    # Given there is data missing for some LAD I am unsure how accurate these averages are - maybe could hard code in using ONS statistics?
-    all_avgs <- c(white_uk, white_nuk, bame_uk, bame_nuk)
-
-    # if all elements not NA - have made assumption sums to 100
-    if (all(!is.na(bame_stats))) {
-
-      # lad specific legend label
-      aoi <- paste0("LAD: ", input$lad)
-
-      # transpose dataframe
-      tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
-
-      # add ENG averages
-      tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
-
-      # Plot population statistics
-      BAME_stats <- tbame_stats %>%
-        e_charts(x = population) %>%
-        e_bar(proportion, name = aoi) %>%
-        e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
-        e_grid(containLabel = TRUE) %>%
-        e_flip_coords() %>%
-        e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
-        e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
-        e_tooltip()
-    }
-
-    else {
-      # data doesn't exist
-      if (all(is.na(bame_stats))) {
-        # keep all the data even if all NAs
+    
+    if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
+      
+    } else {
+    
+      # select user input LA
+      curr_stats <- la_data %>% filter(Name == input$lad)
+      # print(curr_stats)
+  
+      # select bame columns
+      bame_stats <- curr_stats %>% select("Percentage of population who are white UK born", "Percentage of population who are white not UK born", "Percentage of population who are ethnic minority UK born", "Percentage of population who are ethnic minority not UK born")
+      bame_stats <- bame_stats %>%
+        rename("White UK born" = "Percentage of population who are white UK born") %>%
+        rename("White not UK born" = "Percentage of population who are white not UK born") %>%
+        rename("BAME UK born" = "Percentage of population who are ethnic minority UK born") %>%
+        rename("BAME not UK born" = "Percentage of population who are ethnic minority not UK born")
+  
+      # avg for each category
+      white_uk <- la_data %>%
+        select("Percentage of population who are white UK born") %>%
+        drop_na("Percentage of population who are white UK born") %>%
+        mutate(avg_white_uk = mean(`Percentage of population who are white UK born`))
+      white_uk <- round(white_uk$avg_white_uk[1], 1)
+  
+      # white not uk born
+      white_nuk <- la_data %>%
+        select("Percentage of population who are white not UK born") %>%
+        drop_na("Percentage of population who are white not UK born") %>%
+        mutate(avg_white_nuk = mean(`Percentage of population who are white not UK born`))
+      white_nuk <- round(white_nuk$avg_white_nuk[1], 1)
+  
+      # bame uk born
+      bame_uk <- la_data %>%
+        select("Percentage of population who are ethnic minority UK born") %>%
+        drop_na("Percentage of population who are ethnic minority UK born") %>%
+        mutate(avg_bame_uk = mean(`Percentage of population who are ethnic minority UK born`))
+      bame_uk <- round(bame_uk$avg_bame_uk[1], 1)
+  
+      # bame not uk born
+      bame_nuk <- la_data %>%
+        select("Percentage of population who are ethnic minority not UK born") %>%
+        drop_na("Percentage of population who are ethnic minority not UK born") %>%
+        mutate(avg_bame_nuk = mean(`Percentage of population who are ethnic minority not UK born`))
+      bame_nuk <- round(bame_nuk$avg_bame_nuk[1], 1)
+  
+      # Given there is data missing for some LAD I am unsure how accurate these averages are - maybe could hard code in using ONS statistics?
+      all_avgs <- c(white_uk, white_nuk, bame_uk, bame_nuk)
+  
+      # if all elements not NA - have made assumption sums to 100
+      if (all(!is.na(bame_stats)) & input$sidebarItemExpanded == "LocalAuthorities") {
+  
+        # lad specific legend label
+        aoi <- paste0("LAD: ", input$lad)
+  
+        # transpose dataframe
         tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
-
-        # convert NAs to 0 with case_when not going to plot anything
-        tbame_stats <- tbame_stats %>% mutate(to_plot = case_when(
-          population == "White UK born" & is.na(proportion) ~ 0,
-          population == "White not UK born" & is.na(proportion) ~ 0,
-          population == "BAME UK born" & is.na(proportion) ~ 0,
-          population == "BAME not UK born" & is.na(proportion) ~ 0,
-        ))
-
-        # create title
-        title <- paste0("Data Unavailable")
-        subtext <- paste0("LAD: ", input$lad)
-
-        # echart4R
-        pop_plot <- tbame_stats %>%
+  
+        # add ENG averages
+        tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
+  
+        # Plot population statistics
+        BAME_stats <- tbame_stats %>%
           e_charts(x = population) %>%
-          e_bar(to_plot, legend = F) %>%
+          e_bar(proportion, name = aoi) %>%
+          e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
           e_grid(containLabel = TRUE) %>%
           e_flip_coords() %>%
-          # by using show=F no plot is produced.
-          e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%", show = F), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35, show = F) %>%
-          e_y_axis(axisLabel = list(interval = 0, show = F), show = F) %>%
-          e_tooltip() %>%
-          e_title(title, subtext)
+          e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
+          e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+          e_tooltip()
       }
-
+  
       else {
-        # transpose and remove NAs
-        missing_data_or_genuine_zero <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na = TRUE)
-
-        # sum all values in row to see if they == 100 - if yes
-        if (sum(missing_data_or_genuine_zero$proportion) == 100) {
-          # NA in whichever column represents zero
-
-          # get data
+        # data doesn't exist
+        if (all(is.na(bame_stats))) {
+          # keep all the data even if all NAs
           tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
-
-          # add england averages
-          tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
-
-          # account for missing data as true zeros?
+  
+          # convert NAs to 0 with case_when not going to plot anything
           tbame_stats <- tbame_stats %>% mutate(to_plot = case_when(
-            population == "White UK born" & !is.na(proportion) ~ proportion,
             population == "White UK born" & is.na(proportion) ~ 0,
-            population == "White not UK born" & !is.na(proportion) ~ proportion,
             population == "White not UK born" & is.na(proportion) ~ 0,
-            population == "BAME UK born" & !is.na(proportion) ~ proportion,
             population == "BAME UK born" & is.na(proportion) ~ 0,
-            population == "BAME not UK born" & !is.na(proportion) ~ proportion,
             population == "BAME not UK born" & is.na(proportion) ~ 0,
           ))
-
-
-          # lad specific legend label
-          aoi <- paste0("LAD: ", input$lad)
-
-          # echart4R bar chart
+  
+          # create title
+          title <- paste0("Data Unavailable")
+          subtext <- paste0("LAD: ", input$lad)
+  
+          # echart4R
           pop_plot <- tbame_stats %>%
             e_charts(x = population) %>%
-            e_bar(to_plot, name = aoi) %>%
-            e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
+            e_bar(to_plot, legend = F) %>%
             e_grid(containLabel = TRUE) %>%
             e_flip_coords() %>%
-            e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
-            e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
-            e_tooltip()
-        }
-
-        else { # if values don't sum to 100 - give user warning to check figures.
-          # NA in whichever column represents missing data.
-          # get data
-          tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
-
-          # add england averages
-          tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
-
-          # account for missing data with NA?
-          tbame_stats <- tbame_stats %>% mutate(to_plot = case_when(
-            population == "White UK born" & !is.na(proportion) ~ proportion,
-            population == "White UK born" & is.na(proportion) ~ NA_real_,
-            population == "White not UK born" & !is.na(proportion) ~ proportion,
-            population == "White not UK born" & is.na(proportion) ~ NA_real_,
-            population == "BAME UK born" & !is.na(proportion) ~ proportion,
-            population == "BAME UK born" & is.na(proportion) ~ NA_real_,
-            population == "BAME not UK born" & !is.na(proportion) ~ proportion,
-            population == "BAME not UK born" & is.na(proportion) ~ NA_real_,
-          ))
-
-          # remove NAs
-          tbame_stats <- tbame_stats %>% drop_na("to_plot")
-
-          # lad specific legend label
-          aoi <- paste0("LAD: ", input$lad)
-
-          # missing data note
-          missing_data <- paste("Warning", "Missing data", "(n!=100)", sep = "\n")
-
-          # echart4R plot chart
-          pop_plot <- tbame_stats %>%
-            e_charts(x = population) %>%
-            e_bar(to_plot, name = aoi) %>%
-            e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
-            e_grid(containLabel = TRUE) %>%
-            e_flip_coords() %>%
-            e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
-            e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+            # by using show=F no plot is produced.
+            e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%", show = F), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35, show = F) %>%
+            e_y_axis(axisLabel = list(interval = 0, show = F), show = F) %>%
             e_tooltip() %>%
-            e_title("", missing_data, bottom = 40, left = 1)
+            e_title(title, subtext)
+        }
+  
+        else {
+          # transpose and remove NAs
+          missing_data_or_genuine_zero <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion", values_drop_na = TRUE)
+  
+          # sum all values in row to see if they == 100 - if yes
+          if (sum(missing_data_or_genuine_zero$proportion) == 100) {
+            # NA in whichever column represents zero
+  
+            # get data
+            tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
+  
+            # add england averages
+            tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
+  
+            # account for missing data as true zeros?
+            tbame_stats <- tbame_stats %>% mutate(to_plot = case_when(
+              population == "White UK born" & !is.na(proportion) ~ proportion,
+              population == "White UK born" & is.na(proportion) ~ 0,
+              population == "White not UK born" & !is.na(proportion) ~ proportion,
+              population == "White not UK born" & is.na(proportion) ~ 0,
+              population == "BAME UK born" & !is.na(proportion) ~ proportion,
+              population == "BAME UK born" & is.na(proportion) ~ 0,
+              population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+              population == "BAME not UK born" & is.na(proportion) ~ 0,
+            ))
+  
+  
+            # lad specific legend label
+            aoi <- paste0("LAD: ", input$lad)
+  
+            # echart4R bar chart
+            pop_plot <- tbame_stats %>%
+              e_charts(x = population) %>%
+              e_bar(to_plot, name = aoi) %>%
+              e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
+              e_grid(containLabel = TRUE) %>%
+              e_flip_coords() %>%
+              e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
+              e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+              e_tooltip()
+          }
+  
+          else { # if values don't sum to 100 - give user warning to check figures.
+            # NA in whichever column represents missing data.
+            # get data
+            tbame_stats <- bame_stats %>% pivot_longer(c("White UK born", "White not UK born", "BAME UK born", "BAME not UK born"), names_to = "population", values_to = "proportion")
+  
+            # add england averages
+            tbame_stats <- tbame_stats %>% mutate(eng_avg = all_avgs)
+  
+            # account for missing data with NA?
+            tbame_stats <- tbame_stats %>% mutate(to_plot = case_when(
+              population == "White UK born" & !is.na(proportion) ~ proportion,
+              population == "White UK born" & is.na(proportion) ~ NA_real_,
+              population == "White not UK born" & !is.na(proportion) ~ proportion,
+              population == "White not UK born" & is.na(proportion) ~ NA_real_,
+              population == "BAME UK born" & !is.na(proportion) ~ proportion,
+              population == "BAME UK born" & is.na(proportion) ~ NA_real_,
+              population == "BAME not UK born" & !is.na(proportion) ~ proportion,
+              population == "BAME not UK born" & is.na(proportion) ~ NA_real_,
+            ))
+  
+            # remove NAs
+            tbame_stats <- tbame_stats %>% drop_na("to_plot")
+  
+            # lad specific legend label
+            aoi <- paste0("LAD: ", input$lad)
+  
+            # missing data note
+            missing_data <- paste("Warning", "Missing data", "(n!=100)", sep = "\n")
+  
+            # echart4R plot chart
+            pop_plot <- tbame_stats %>%
+              e_charts(x = population) %>%
+              e_bar(to_plot, name = aoi) %>%
+              e_scatter(eng_avg, name = "National avg", symbolSize = 8) %>%
+              e_grid(containLabel = TRUE) %>%
+              e_flip_coords() %>%
+              e_x_axis(axisLabel = list(interval = 0, rotate = 45, formatter = "{value}%"), name = "Percentage of population (%)", nameLocation = "middle", nameGap = 35) %>%
+              e_y_axis(axisLabel = list(interval = 0, show = T)) %>%
+              e_tooltip() %>%
+              e_title("", missing_data, bottom = 40, left = 1)
+          }
         }
       }
     }
@@ -602,7 +613,7 @@ server <- function(input, output) {
     any_info <- curr_stats %>% select(-one_of("country", "code", "name"))
 
     # where data is available
-    if (!all(is.na(any_info))) {
+    if (!all(is.na(any_info)) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # transpose
       # inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
@@ -645,8 +656,8 @@ server <- function(input, output) {
         e_tooltip(trigger = "axis")
     }
 
-    else {
-
+    else if (all(is.na(any_info)) & input$sidebarItemExpanded == "LocalAuthorities") {
+      
       # transpose
       inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
 
@@ -662,7 +673,7 @@ server <- function(input, output) {
       area <- paste0("Infection rate for: ", input$lad)
 
       # create title
-      title <- paste0("Unfortunately, infection rate data is unavailable for ", input$lad)
+      title <- paste0("Infection rate data is not available for ", input$lad)
       # subtext <- paste0("Please select another local authority")
 
       # plot
@@ -672,16 +683,24 @@ server <- function(input, output) {
         e_x_axis(show = F) %>%
         e_y_axis(show = F) %>%
         e_title(title) # , subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+          e_charts(x = stat) %>%
+          e_x_axis(show = F) %>%
+          e_y_axis(show = F) %>%
+          e_title("Infection rate data is not available for Primary Care Networks")
+
     }
   })
-
-
 
   # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable
   output$cl_vunl <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
-    if (!is.na(curr_stats$`Clinically extremely vulnerable`)) {
+    
+    if (!is.na(curr_stats$`Clinically extremely vulnerable`) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # filter na's from la_data
       all_clinic_vuln <- la_data %>%
@@ -714,7 +733,7 @@ server <- function(input, output) {
         e_tooltip()
     }
 
-    else {
+    else if (is.na(curr_stats$`Clinically extremely vulnerable`) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # plot message saying data unavailable
       lad_clinic_vuln <- curr_stats %>% select("Name", "Clinically extremely vulnerable")
@@ -736,6 +755,14 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_tooltip() %>%
         e_title(title, subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
     }
   })
 
@@ -743,7 +770,8 @@ server <- function(input, output) {
   output$IMD <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
-    if (!is.na(curr_stats$Extent)) {
+    
+    if (!is.na(curr_stats$Extent) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # filter na's from la_data
       IMD_vuln <- la_data %>%
@@ -779,7 +807,7 @@ server <- function(input, output) {
         e_tooltip()
     }
 
-    else {
+    else if (is.na(curr_stats$Extent) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # get one with no data
       lad_IMD_vuln <- curr_stats %>% select("Name", "Extent")
@@ -801,6 +829,15 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_tooltip() %>%
         e_title(title, subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error  
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
+      
     }
   })
 
@@ -809,7 +846,7 @@ server <- function(input, output) {
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
 
-    if (!is.na(curr_stats$`People receiving Section 95 support`)) {
+    if (!is.na(curr_stats$`People receiving Section 95 support`) & input$sidebarItemExpanded == "LocalAuthorities") {
 
       # filter na's from la_data
       all_sec_95 <- la_data %>%
@@ -842,7 +879,7 @@ server <- function(input, output) {
         e_tooltip()
     }
 
-    else {
+    else if (is.na(curr_stats$`People receiving Section 95 support`) & input$sidebarItemExpanded == "LocalAuthorities") {
       # lad with no section 95 data
       lad_sec_95 <- curr_stats %>% select("Name", "People receiving Section 95 support")
 
@@ -863,6 +900,15 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_tooltip() %>%
         e_title(title, subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error  
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
+      
     }
   })
   
@@ -872,7 +918,7 @@ server <- function(input, output) {
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
     
-    if(!is.na(curr_stats$`Furlough count`)){
+    if(!is.na(curr_stats$`Furlough count`) & input$sidebarItemExpanded == "LocalAuthorities") {
       
       # Calculate mean rate
       mean_fulough <-
@@ -904,7 +950,7 @@ server <- function(input, output) {
       
     }
     
-    else {
+    else if(is.na(curr_stats$`Furlough count`) & input$sidebarItemExpanded == "LocalAuthorities") {
       # lad with no furlough data
       lad_furlough <- curr_stats %>% select("Name", `Furlough count`)
       
@@ -925,6 +971,15 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_tooltip() %>%
         e_title(title, subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
+      
     }
   })
   
@@ -934,7 +989,7 @@ server <- function(input, output) {
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
     
-    if(!is.na(curr_stats$Homelessness)){
+    if(!is.na(curr_stats$Homelessness) & input$sidebarItemExpanded == "LocalAuthorities") {
       
       # Calculate mean rate
       mean_homelessness <-
@@ -966,7 +1021,7 @@ server <- function(input, output) {
       
     }
     
-    else {
+    else if(is.na(curr_stats$Homelessness) & input$sidebarItemExpanded == "LocalAuthorities") {
       # lad with no homelessness data
       lad_homelessness <- curr_stats %>% select("Name", Homelessness)
       
@@ -987,6 +1042,15 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_tooltip() %>%
         e_title(title, subtext)
+    
+    # If user is selecting Primary Care Networks, plot an error
+    } else if (input$sidebarItemExpanded == "PrimaryCareNetworks") {
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Data unavailable for Primary Care Networks")
+      
     }
     
   })

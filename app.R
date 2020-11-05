@@ -60,6 +60,9 @@ pcn_shp <- read_sf("data/Primary_Care_Networks.shp")
 pcn_shp <- pcn_shp %>% 
   mutate(Name = str_to_title(str_remove(PCN_Name, " PCN")))
 
+pcn_msoa <- read_csv("data/lookup primary care network to msoas.csv")
+
+
 # # ---- UI ----
 # https://community.rstudio.com/t/big-box-beside-4-small-boxes-using-shinydashboard/39489
 body_colwise <- dashboardBody(
@@ -185,12 +188,12 @@ body_colwise <- dashboardBody(
       tabName = "pcn",
 
       selectInput("pcn_name",
-                  label = "Choose a Primary Care Network",
+                  label = "Choose a Primary Care Network (black outlines on the map)",
                   choices = sort(pcn_shp$Name)
                   # selected = "Tower Hamlets"
       ),
       
-      #leafletOutput("pcn_map", height = "395px")
+      leafletOutput("pcn_map", height = "500px")
     )
 
   ) # tabItems
@@ -205,9 +208,13 @@ ui <- function(request) {
   sidebar = dashboardSidebar(
     width = "300px",
     # insert dropdown menu and text here
-    # p(" "),
-    # p(" "),
+    sidebarMenu(
+      id = "sidebar",
+      menuItem("Local Authorities", tabName = "la", icon = icon("dashboard")),
+      menuItem("Primary Care Networks", icon = icon("hospital"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
+    ),
     br(),
+    
     p(style="text-align: justify;",
       "This tool helps you find potential sites to use for COVID-19 mobile testing.
       Use the drop-down box below to select a Local Authority. 
@@ -216,25 +223,15 @@ ui <- function(request) {
       a cluster to narrow in on the parking lots."),
     br(),
     
-    sidebarMenu(
-      menuItem("Local Authorities", tabName = "la", icon = icon("dashboard")),
-      menuItem("Primary Care Networks", icon = icon("th"), tabName = "pcn", badgeLabel = "new", badgeColor = "green")
-    ),
-    br(),
-    
-    
-
     selectInput("vi",
       label = "Type of vulnerability",
       choices = c("Socioeconomic vulnerability", "Clinical vulnerability", "Overall vulnerability")
     ),
-    
     br(),
     br(),
     
     p(style="text-align: justify;",
       a(href = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/", target = "_blank", "Contains public sector information licensed under the Open Government Licence v3.0.")),
-
     br(),
     br(),
 
@@ -250,7 +247,7 @@ server <- function(input, output) {
   hospital_icon <- makeIcon("www/hospital-red.png", 20, 20)
   carpark_icon <- makeIcon("www/parking.png", 20, 20)
 
-  # ---- Draw basemap ----
+  # ---- Draw Local Authorities basemap ----
   # set up the static parts of the map (that don't change as user selects different options)
   output$map <- renderLeaflet({
     leaflet(lad, options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
@@ -352,6 +349,116 @@ server <- function(input, output) {
         decreasing = TRUE
       )
   })
+  
+  
+  # ---- Draw Primary Care Networks basemap ----
+  # set up the static parts of the map (that don't change as user selects different options)
+  output$pcn_map <- renderLeaflet({
+    leaflet(options = leafletOptions(minZoom = 5, maxZoom = 15, attributionControl = F)) %>%
+      # setView(lat = 54.00366, lng = -2.547855, zoom = 7) %>% # centre map on Whitendale Hanging Stones, the centre of GB: https://en.wikipedia.org/wiki/Centre_points_of_the_United_Kingdom
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      
+      # Add button to reset zoom
+      addEasyButton(easyButton(
+        icon = "fa-globe", title = "Reset zoom level",
+        onClick = JS("function(btn, map){ map.setZoom(6); }")
+      )) %>%
+      
+      # Add measuring tool to allow computation of distances as the crow flies
+      addMeasure(
+        position = "bottomleft",
+        primaryLengthUnit = "miles",
+        secondaryLengthUnit = "kilometers",
+        activeColor = "#21908D",
+        completedColor = "#3B1C8C"
+      ) %>%
+      
+      # Add hospital markers
+      addMarkers(
+        data = markers_hosp,
+        popup = ~popup,
+        # icon=hospital_icon
+        icon = list(iconUrl = "www/hospital-red.png", iconSize = c(20, 20))
+      ) %>%
+      
+      # Add carpark markers to firs displayed map?
+      addMarkers(
+        data = markers_car,
+        popup = ~popup,
+        clusterOptions = markerClusterOptions(),
+        # icon=hospital_icon
+        icon = list(iconUrl = "www/parking.png", iconSize = c(20, 20))
+      )
+  })
+  
+  
+  # ---- Change map when user selects a PCN ----
+  # Show data for and zoom to selected PCN
+  filteredPCN <- reactive({
+    pcn_shp %>% filter(Name == input$pcn_name)
+  })
+  
+  filteredVI_PCN <- reactive({
+    # get code from selected PCN name
+    pcn_code <- pcn_shp %>% filter(Name == input$pcn_name)
+    
+    # get MSOAs that overlap with this PCN
+    curr_msoas <- pcn_msoa %>% filter(PCN_Code == pcn_code$PCN_Code)
+    
+    vi %>%
+      filter(Code %in% curr_msoas$MSOA11CD) %>% 
+      #filter(PCN_Code %in% pcn_code$PCN_Code) %>%
+      mutate(Decile = case_when(
+        input$vi == "Socioeconomic vulnerability" ~ Socioeconomic.Vulnerability.decile,
+        input$vi == "Clinical vulnerability" ~ Clinical.Vulnerability.decile,
+        input$vi == "Overall vulnerability" ~ Vulnerability.decile
+      ))
+  })
+  
+  observe({
+    curr_PCN <- filteredPCN()
+    
+    pcn_shp_box = st_bbox(curr_PCN)
+    pcn_point = curr_PCN %>% st_centroid() %>% st_geometry()
+    
+    leafletProxy("pcn_map", data = curr_PCN) %>%
+      clearShapes() %>%
+      
+      addPolygons(
+        data = filteredVI_PCN(),
+        fillColor = ~ pal(Decile), fillOpacity = 0.8, color = "white", weight = 0.7,
+        popup = ~ paste(
+          "<b>", Name, "</b><br/><br/>",
+          "Overall vulnerability (10 = worst): ", Vulnerability.decile, "<br/>",
+          "Clinical vulnerability: ", Clinical.Vulnerability.decile, "<br/>",
+          "Health/wellbeing vulnerability: ", Health.Wellbeing.Vulnerability.decile, "<br/>",
+          "Socioeconomic vulnerability: ", Socioeconomic.Vulnerability.decile, "<br/>"
+        )
+      ) %>%
+      
+      addPolygons(
+        data = curr_PCN, fillColor = "white", fillOpacity = 0.01, color = "black", weight = 2
+      ) %>% 
+      
+      setView(lng = pcn_point[[1]][1], lat = pcn_point[[1]][2], zoom = 12)
+      
+      # fitBounds(lat1 = pcn_shp_box[1], lng1 = pcn_shp_box[2], lat2 = pcn_shp_box[3], lng2 = pcn_shp_box[4])
+  })
+  
+  # Use a separate observer to recreate the legend as needed.
+  observe({
+    leafletProxy("pcn_map", data = vi) %>%
+      clearControls() %>%
+      addLegend_decreasing(
+        position = "bottomright",
+        pal = pal,
+        values = ~Vulnerability.decile,
+        title = paste0(input$vi, tags$br(), " (10 = most vulnerable)"),
+        opacity = 0.8,
+        decreasing = TRUE
+      )
+  })
+  
 
   # ---- Local authority statistics plots ----
   # Population statistics bar chart

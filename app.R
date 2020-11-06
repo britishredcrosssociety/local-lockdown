@@ -55,6 +55,8 @@ lad <- lad %>%
 covid_inf <- read_csv("https://github.com/VictimOfMaths/COVID_LA_Plots/raw/master/LACases.csv")
 covid_inf$date <- as.Date(covid_inf$date)
 
+covid_deaths <- read_csv("https://github.com/VictimOfMaths/COVID_LA_Plots/raw/master/LAExcess.csv")
+
 # Load Primary Care Networks
 pcn_shp <- read_sf("data/Primary_Care_Networks.shp")
 pcn_shp <- pcn_shp %>% 
@@ -94,11 +96,15 @@ body_colwise <- dashboardBody(
       
       column(
         width = 6,
-        box(
-          width = NULL, height = "450px", solidHeader = TRUE, status = "danger",
-          title = "COVID-19 Infection Rate (per 100,000 people)",
-          # Plot
-          echarts4rOutput("latest_inf", height = "395px")
+        tabBox(
+          id = "covid_stats",
+          width = NULL, height = "450px", #solidHeader = TRUE, status = "danger",
+          # title = "COVID-19 Infection Rate (per 100,000 people)",
+          
+          tabPanel("Covid-19 Cases", echarts4rOutput("latest_inf", height = "395px")),
+          tabPanel("Hospitalisations", ""),
+          tabPanel("Excess deaths", echarts4rOutput("latest_deaths", height = "395px"))
+          
         )
       )
     ),
@@ -588,7 +594,7 @@ server <- function(input, output) {
     }
   })
 
-  ## plotting infection rate statistics
+  # ---- Covid cases ----
   output$latest_inf <- renderEcharts4r({
     curr_stats <- covid_inf %>% 
       filter(name == input$lad) %>% 
@@ -694,8 +700,51 @@ server <- function(input, output) {
 
     }
   })
+  
+  # ---- Excess deaths ----
+  output$latest_deaths <- renderEcharts4r({
+    if (input$sidebarItemExpanded == "LocalAuthorities") {
+      curr_stats <- covid_deaths %>% 
+        filter(name == input$lad) %>% 
+        select(code, name, week, location, allexcess) %>% 
+        na.omit()
+      
+      # Plot only if there's something to show
+      if (nrow(curr_stats) > 0) {
+        curr_stats %>% 
+          group_by(location) %>% 
+          e_charts(week, stack = "grp") %>% 
+          e_bar(allexcess) %>% 
+          
+          e_x_axis(type = "category", name = "Week number", nameLocation = "middle", nameGap = 25) %>% 
+          e_y_axis(axisLabel = list(interval = 0), name = "Excess deaths vs. 2015-19 average", nameLocation = "middle", nameGap = 25) %>%
+          e_title("Excess deaths",
+                  "Excess deaths by occurence in 2020 vs. 2015-19 average by location.\nAround 5% of deaths are not included in this data until at least 3 months from when the death occurs.") %>% 
+          e_tooltip(trigger = "axis")
+        
+      } else {
+        # No data available for this LA - don't show anything
+        scatter <- tibble(stat = 0) %>%
+          e_charts(x = stat) %>%
+          e_x_axis(show = F) %>%
+          e_y_axis(show = F) %>%
+          e_title(paste0("Excess deaths data is not available for ", input$lad))
+      }
+      
+      
+    } else {
+      # User selected Primary Care Networks - don't show anything
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Excess deaths data is not available for Primary Care Networks")
+    }
+    
+    
+  })
 
-  # Clinically extremely vulnerable --> display as comparison to avg no. of clinically extremely vulnerable
+  # ---- Clinically extremely vulnerable ----
   output$cl_vunl <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)
@@ -766,7 +815,7 @@ server <- function(input, output) {
     }
   })
 
-  # Proportion of population living in highly deprived areas plot
+  # ---- Proportion of population living in highly deprived areas ----
   output$IMD <- renderEcharts4r({
     # filter for just one of interest
     curr_stats <- la_data %>% filter(Name == input$lad)

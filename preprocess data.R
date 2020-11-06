@@ -146,7 +146,7 @@ write_csv(covid_raw, 'data/all_covid_infection_rate_data.csv')
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-shielded = read_csv("https://files.digital.nhs.uk/BC/85E39A/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-09-09.csv")
+shielded = read_csv("https://files.digital.nhs.uk/6B/6791B9/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-10-28.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)

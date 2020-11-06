@@ -18,9 +18,13 @@ vi = read_sf("https://github.com/britishredcrosssociety/covid-19-vulnerability/r
 # lookup local authorities that each MSOA is in
 msoa_lad = read_csv("https://github.com/britishredcrosssociety/covid-19-vulnerability/raw/master/data/lookup%20msoa%20to%20lad.csv")
 
+# lookup primary care networks to MSOA centroids
+msoa_pcn = read_csv("data/lookup msoa to primary care network.csv")
+
 # save a local copy
 vi %>% 
   left_join(msoa_lad, by = c("Code" = "MSOA11CD")) %>% 
+  left_join(msoa_pcn, by = c("Code" = "MSOA11CD")) %>% 
   write_sf("data/vulnerability.geojson")
 
 # ---- Weekly infection rates ----
@@ -142,7 +146,7 @@ write_csv(covid_raw, 'data/all_covid_infection_rate_data.csv')
 
 # ---- Shielding ----
 # Coronavirus Shielded Patient List, England - Local Authority: https://digital.nhs.uk/data-and-information/publications/statistical/mi-english-coronavirus-covid-19-shielded-patient-list-summary-totals/latest
-shielded = read_csv("https://files.digital.nhs.uk/BC/85E39A/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-09-09.csv")
+shielded = read_csv("https://files.digital.nhs.uk/6B/6791B9/Coronavirus%20Shielded%20Patient%20List%2C%20England%20-%20Open%20Data%20with%20CMO%20DG%20-%20LA%20-%202020-10-28.csv")
 
 shielded = shielded %>% 
   # keep only latest values (if more than one extraction happens to be in this file)

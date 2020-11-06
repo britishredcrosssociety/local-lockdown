@@ -101,9 +101,9 @@ body_colwise <- dashboardBody(
           width = NULL, height = "450px", #solidHeader = TRUE, status = "danger",
           # title = "COVID-19 Infection Rate (per 100,000 people)",
           
-          tabPanel("Covid-19 Cases", echarts4rOutput("latest_inf", height = "395px")),
-          tabPanel("Hospitalisations", ""),
-          tabPanel("Excess deaths", echarts4rOutput("latest_deaths", height = "395px"))
+          tabPanel("Covid-19 Cases",   echarts4rOutput("latest_inf", height = "395px")),
+          tabPanel("Covid-19 Hospitalisations", echarts4rOutput("latest_hospitalisations", height = "395px")),
+          tabPanel("Excess deaths",    echarts4rOutput("latest_deaths", height = "395px"))
           
         )
       )
@@ -659,10 +659,11 @@ server <- function(input, output) {
         e_mark_point(area,
                      data = list(xAxis = x_point$date, yAxis = y_point$caserate_avg, value = y_point$caserate_avg),
                      label = list(fontSize = 8)) %>%
-        e_tooltip(trigger = "axis")
-    }
-
-    else if (all(is.na(any_info)) & input$sidebarItemExpanded == "LocalAuthorities") {
+        e_tooltip(trigger = "axis") %>% 
+        e_title("",
+                "Rolling 7-day average of confirmed new COVID-19 cases")
+      
+    } else if (all(is.na(any_info)) & input$sidebarItemExpanded == "LocalAuthorities") {
       
       # transpose
       inf_rate <- any_info %>% pivot_longer(c(names(any_info)), names_to = "stat", values_to = "value")
@@ -701,6 +702,80 @@ server <- function(input, output) {
     }
   })
   
+  # ---- Hospitalisations ----
+  output$latest_hospitalisations <- renderEcharts4r({
+    if (input$sidebarItemExpanded == "LocalAuthorities") {
+      curr_stats <- covid_inf %>% 
+        # filter(name == input$lad) %>% 
+        filter(name == "Tower Hamlets") %>% 
+        select(country, code, name, date, admrate_avg) %>% 
+        na.omit()
+      
+      curr_nation <- unique(curr_stats$country)
+      
+      lag <- 3  # discount most recent three days' figures (which are under-reported)
+      
+      # Get cases for the nation the selected LA is in
+      country_stats <- covid_inf %>% 
+        filter(name == curr_nation) %>% 
+        select(date, national_avg = admrate_avg)
+      
+      # Plot only if there's something to show
+      if (nrow(curr_stats) > 0) {
+        curr_stats <- left_join(curr_stats, country_stats, by = "date") %>% 
+          na.omit() %>% 
+          mutate(admrate_avg = round(admrate_avg, 2),
+                 national_avg = round(national_avg, 2)) %>% 
+          arrange(date) %>% 
+          filter(row_number() < n() - lag)
+        
+        # to highlight current infection rate
+        y_point <- curr_stats %>%
+          select(admrate_avg) %>%
+          slice(n())
+        x_point <- curr_stats %>%
+          select(date) %>%
+          slice(n())
+        
+        # LAD specific legend
+        area <- paste0(input$lad)
+        nation <- paste0(curr_nation, " (average)")
+        
+        # format xasix label
+        label <- paste("Daily confirmed new hospital", "admissions per 100,000", sep = "\n")
+        
+        curr_stats %>% 
+          e_charts(x = date) %>%
+          e_line(admrate_avg, name = area, symbolSize = 5) %>%
+          e_line(national_avg, name = nation, symbolSize = 5) %>%
+          e_x_axis(axisLabel = list(interval = 0), name = NA, nameLocation = "middle", nameGap = 25) %>%
+          e_y_axis(axisLabel = list(interval = 0), name = label, nameLocation = "middle", nameGap = 25) %>%
+          e_mark_point(area,
+                       data = list(xAxis = x_point$date, yAxis = y_point$admrate_avg, value = y_point$admrate_avg),
+                       label = list(fontSize = 8)) %>%
+          e_tooltip(trigger = "axis") %>% 
+          e_title("",
+                  "\nRolling 7-day average of confirmed new COVID-19 admissions per 100,000 people")
+        
+      } else {
+        # No data available for this LA - don't show anything
+        scatter <- tibble(stat = 0) %>%
+          e_charts(x = stat) %>%
+          e_x_axis(show = F) %>%
+          e_y_axis(show = F) %>%
+          e_title(paste0("Hospitalisations data is not available for ", input$lad))
+      }
+      
+    } else {
+      # User selected Primary Care Networks - don't show anything
+      scatter <- tibble(stat = 0) %>%
+        e_charts(x = stat) %>%
+        e_x_axis(show = F) %>%
+        e_y_axis(show = F) %>%
+        e_title("Hospitalisations data is not available for Primary Care Networks")
+    }
+  })
+  
   # ---- Excess deaths ----
   output$latest_deaths <- renderEcharts4r({
     if (input$sidebarItemExpanded == "LocalAuthorities") {
@@ -718,8 +793,8 @@ server <- function(input, output) {
           
           e_x_axis(type = "category", name = "Week number", nameLocation = "middle", nameGap = 25) %>% 
           e_y_axis(axisLabel = list(interval = 0), name = "Excess deaths vs. 2015-19 average", nameLocation = "middle", nameGap = 25) %>%
-          e_title("Excess deaths",
-                  "Excess deaths by occurence in 2020 vs. 2015-19 average by location.\nAround 5% of deaths are not included in this data until at least 3 months from when the death occurs.") %>% 
+          e_title("",
+                  "\nExcess deaths by occurence in 2020 vs. 2015-19 average by location.\nAround 5% of deaths are not included in this data until at least 3 months from when the death occurs.") %>% 
           e_tooltip(trigger = "axis")
         
       } else {
@@ -731,7 +806,6 @@ server <- function(input, output) {
           e_title(paste0("Excess deaths data is not available for ", input$lad))
       }
       
-      
     } else {
       # User selected Primary Care Networks - don't show anything
       scatter <- tibble(stat = 0) %>%
@@ -740,8 +814,6 @@ server <- function(input, output) {
         e_y_axis(show = F) %>%
         e_title("Excess deaths data is not available for Primary Care Networks")
     }
-    
-    
   })
 
   # ---- Clinically extremely vulnerable ----

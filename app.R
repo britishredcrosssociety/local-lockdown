@@ -661,7 +661,7 @@ server <- function(input, output) {
                      label = list(fontSize = 8)) %>%
         e_tooltip(trigger = "axis") %>% 
         e_title("",
-                "Rolling 7-day average of confirmed new COVID-19 cases")
+                "\nRolling 7-day average of confirmed new COVID-19 cases")
       
     } else if (all(is.na(any_info)) & input$sidebarItemExpanded == "LocalAuthorities") {
       

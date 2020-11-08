@@ -151,14 +151,25 @@ ui <- function(request) {
     sidebar = dashboardSidebar(
       width = "300px",
       
-      br(),
+      h3("Info", style = "padding-left:10px; padding-right:10px;"),
       
       p(
-        style = "text-align: justify;",
-        style = "color:black;",
-        "This tool helps you find potential sites to use for COVID-19 mobile testing.
-      Use the drop-down boxes below to select a Local Authority or Primary Care Network."
+        style = "text-align: justify; font-size:12px; color:black; padding-left:10px; padding-right:10px;",
+        "This tool helps you find sites to use for COVID-19 mobile testing.
+        The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
+      Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
+      a cluster to narrow in on the parking lots."
       ),
+      
+      h3("Instructions", style = "padding-left:10px; padding-right:10px;"),
+      
+      p(
+        style = "text-align: justify; font-size:12px; color:black; padding-left:10px; padding-right:10px;",
+        "Use the drop-down boxes below to first select a local authority or primary care network,
+        and then select a domain of vulnerability to show on the map."
+      ),
+      
+      h4("1. Select area", style = "padding-left:10px; padding-right:10px;"),
       
       sidebarMenu(
         id = "sidebar",
@@ -179,17 +190,8 @@ ui <- function(request) {
                  )
         )
       ),
-      br(),
       
-      
-      p(
-        style = "text-align: justify;",
-        style = "color:black;",
-        "The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
-      Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
-      a cluster to narrow in on the parking lots. Use the drop-down box below to select a domain of vulnerability." 
-      ),
-      
+      h4("2. Select vulnerability domain", style = "padding-left:10px; padding-right:10px;"),
       
       selectInput("vi",
                   label = "Type of vulnerability",

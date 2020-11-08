@@ -83,7 +83,7 @@ body_colwise <- dashboardBody(
   tags$head(includeCSS("styles.css")),
   tags$head(HTML("<title>Find potential COVID-19 mobile testing sites | British Red Cross</title>")),
   
-  ### changing theme
+  # Load custom theme
   shinyDashboardThemes(
     theme = "grey_light"
   ),
@@ -198,15 +198,13 @@ ui <- function(request) {
       br(),
       br(),
       
-      p(
-        style = "text-align: justify;",
-        style = "color:black;",
-        a(href = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/", target = "_blank", "Contains public sector information licensed under the Open Government Licence v3.0.")
-      ),
-      br(),
-      br(),
-      
-      div(p(style = "color:black;","Developed by"), img(src = "brc-logo.jpg", width = 225), style = "text-align: center;")
+      div(
+          img(src = "brc-logo.jpg", width = 220),
+          p(
+            style = "font-size:7px; color:black;",
+            a(href = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/", target = "_blank", "Contains public sector information licensed under the Open Government Licence v3.0.")
+          ),
+          style = "position:fixed; bottom:0; padding:10px; text-align: center;")
     ),
     body_colwise
   )

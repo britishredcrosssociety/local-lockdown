@@ -151,14 +151,14 @@ ui <- function(request) {
     sidebar = dashboardSidebar(
       width = "300px",
       
-      h3("Info", style = "padding-left:10px; padding-right:10px;"),
+      h3("About", style = "padding-left:10px; padding-right:10px;"),
       
       p(
         style = "text-align: justify; font-size:12px; color:black; padding-left:10px; padding-right:10px;",
         "This tool helps you find sites to use for COVID-19 mobile testing.
         The shaded regions of the map show neighbourhood vulnerability (from ", a(href = "https://britishredcrosssociety.github.io/covid-19-vulnerability", target = "_blank", "British Red Cross's Vulnerability Index"), "). 
-      Markers show hospitals in or near highly vulnerable areas. Parking lots are shown by clusters (circles containing a number). Click 
-      a cluster to narrow in on the parking lots."
+      Markers show hospitals in or near highly vulnerable areas. Car parks are shown by clusters (circles containing a number). Click 
+      a cluster to narrow in on local car parks."
       ),
       
       h3("Instructions", style = "padding-left:10px; padding-right:10px;"),

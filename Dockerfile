@@ -31,6 +31,7 @@ RUN apt-get update \
         echarts4r \
         sever \
         waiter \
+        dashboardthemes \
     # Needed for installGithub.r
     && install2.r --error remotes \
     # Tidyr v1.1.1 has a cpp11 error - https://stackoverflow.com/questions/63348135/error-installing-tidyr-on-ubuntu-18-04-r-4-0-2

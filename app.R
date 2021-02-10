@@ -204,7 +204,7 @@ ui <- function(request) {
           img(src = "brc-logo.jpg", width = 220),
           p(
             style = "font-size:7px; color:black;",
-            a(href = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/", target = "_blank", "Contains public sector information licensed under the Open Government Licence v3.0.")
+            a(href = "https://github.com/britishredcrosssociety/local-lockdown/blob/master/LICENSE", target = "_blank", "Click here to view licenses.")
           ),
           style = "position:fixed; bottom:0; padding:10px; text-align: center;")
     ),
